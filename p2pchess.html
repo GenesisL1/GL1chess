@@ -1,0 +1,3894 @@
+<script>
+//  SPDX-License-Identifier: MIT
+//
+// Copyright (c) 2025 Decentralized Science Labs
+// Developed by Decentralized Science Labs
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+//
+</script>
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>GenesisL1 Chess EVM Convolutional Neural Network</title>
+  <style>
+    [hidden]{display:none!important;}
+    :root{
+      --bg0:#0b1220; --bg1:#0e1a2f;
+      --panel:rgba(255,255,255,0.06);
+      --panel-border:rgba(255,255,255,0.12);
+      --text:rgba(255,255,255,0.92);
+      --muted:rgba(255,255,255,0.65);
+      --sq-light:#f1d9b5; --sq-dark:#b58863;
+      --radius:16px;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;margin:0;color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(125,211,252,0.10), transparent 60%),
+                  radial-gradient(1000px 700px at 80% 0%, rgba(251,113,133,0.10), transparent 55%),
+                  linear-gradient(180deg, var(--bg1), var(--bg0));
+    }
+    .app{width:min(1100px,100%);margin:0 auto;padding:16px 16px 28px;}
+    .header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
+    .brand{font-weight:750;font-size:18px}
+    .status{margin-top:4px;color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+    .layout{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;}
+    @media (max-width:980px){.layout{grid-template-columns:1fr;}}
+    .board-section{display:flex;flex-direction:column;align-items:center;gap:10px;}
+
+    /* Clocks */
+    .clockbar{
+      width:min(92vw,560px);
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      gap:10px;
+      align-items:center;
+      margin-bottom:2px;
+    }
+    .clock{
+      background:var(--panel);
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:10px 12px;
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      backdrop-filter:blur(10px);
+    }
+    .clock .label{
+      font-size:12px;
+      letter-spacing:0.3px;
+      text-transform:uppercase;
+      color:rgba(255,255,255,0.74);
+      font-weight:800;
+    }
+    .clock .time{
+      font-size:20px;
+      font-weight:900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing:0.2px;
+    }
+    .clock.active{
+      border-color:rgba(125,211,252,0.42);
+      box-shadow:0 0 0 2px rgba(125,211,252,0.14) inset;
+    }
+    .clock.flag{
+      border-color:rgba(251,113,133,0.55);
+      box-shadow:0 0 0 2px rgba(251,113,133,0.16) inset;
+    }
+    .clock-center{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      color:var(--muted);
+      font-size:12px;
+      min-width:92px;
+      user-select:none;
+    }
+    .clock-center .tc{
+      font-weight:800;
+      color:rgba(255,255,255,0.86);
+      letter-spacing:0.2px;
+    }
+    .clock-center .turn{
+      color:rgba(255,255,255,0.70);
+    }
+
+    /* Captured pieces bar */
+    .capturedbar{
+      width:min(92vw,560px);
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      gap:10px;
+      align-items:stretch;
+      margin-bottom:6px;
+    }
+    .captured{
+      background:var(--panel);
+      border:1px solid var(--panel-border);
+      border-radius:14px;
+      padding:8px 10px;
+      backdrop-filter:blur(10px);
+      min-height:40px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px 10px;
+      align-items:center;
+      justify-content:flex-start;
+      font-variant-numeric: tabular-nums;
+    }
+    .captured-center{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:rgba(255,255,255,0.58);
+      font-size:12px;
+      user-select:none;
+      min-width:92px;
+    }
+    .cap-item{
+      display:inline-flex;
+      align-items:baseline;
+      gap:4px;
+      padding:2px 6px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.10);
+    }
+    .cap-piece{font-size:16px; line-height:1;}
+    .cap-count{font-size:12px; font-weight:800; color:rgba(255,255,255,0.80);}
+    .cap-empty{color:rgba(255,255,255,0.50); font-size:12px;}
+
+    .board{
+      width:min(92vw,560px);aspect-ratio:1/1;display:grid;
+      grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+      border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,0.14);
+      box-shadow:0 18px 55px rgba(0,0,0,0.45);touch-action:none;user-select:none;background:rgba(0,0,0,0.15);
+    }
+    /* P2P panel when placed under the board */
+    .p2p-under-board{
+     width: min(92vw, 560px);
+     }
+    .square{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+      padding:0;border:0;margin:0;border-radius:0;appearance:none;-webkit-appearance:none;background:transparent;cursor:pointer;outline:none;
+      -webkit-tap-highlight-color:transparent;}
+    .square.light{background:var(--sq-light);} .square.dark{background:var(--sq-dark);}
+    .piece{font-size:clamp(30px,7vw,56px);line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.25));
+      pointer-events:none;font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Apple Symbols",ui-sans-serif,system-ui;}
+    .coord{position:absolute;font-size:11px;line-height:1;pointer-events:none;opacity:0.75;}
+    .square.light .coord{color:rgba(0,0,0,0.55);} .square.dark .coord{color:rgba(255,255,255,0.7);}
+    .coord.file{left:6px;bottom:4px;} .coord.rank{right:6px;top:4px;}
+    .square::before{content:"";position:absolute;inset:0;opacity:0;transition:opacity 110ms ease;pointer-events:none;}
+    .square.selected::before{background:rgba(125,211,252,0.22);opacity:1;}
+    .square.last-from::before,.square.last-to::before{background:rgba(253,224,71,0.18);opacity:1;}
+    .square.in-check::before{background:rgba(251,113,133,0.22);opacity:1;}
+    .square.legal::after,.square.capture::after{content:"";position:absolute;pointer-events:none;border-radius:999px;opacity:0.9;}
+    .square.legal::after{width:22%;height:22%;background:rgba(0,0,0,0.28);}
+    .square.dark.legal::after{background:rgba(255,255,255,0.36);}
+    .square.capture::after{width:80%;height:80%;border:4px solid rgba(0,0,0,0.28);background:transparent;}
+    .square.dark.capture::after{border-color:rgba(255,255,255,0.36);}
+    .square.drag-origin .piece{opacity:0;}
+    .hint{width:min(92vw,560px);font-size:12.5px;color:var(--muted);text-align:center;}
+    .sidebar{display:flex;flex-direction:column;gap:12px;}
+    .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:var(--radius);padding:12px;backdrop-filter:blur(10px);margin-top: 8px;}
+    .panel-title{font-size:13px;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;color:rgba(255,255,255,0.82);margin-bottom:10px;}
+    .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+    .btn{appearance:none;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.10);color:var(--text);
+      padding:9px 11px;border-radius:12px;font-size:13px;font-weight:650;cursor:pointer;transition:transform .06s ease,background .12s ease,border-color .12s ease;}
+    .btn:hover{border-color:rgba(255,255,255,0.26);background:rgba(255,255,255,0.14);}
+    .btn:active{transform:translateY(1px);}
+    .btn.btn-ghost{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.14);}
+    .btn[disabled]{opacity:0.55;cursor:not-allowed;}
+    .fen{width:100%;min-height:64px;resize:vertical;border-radius:12px;border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.18);color:rgba(255,255,255,0.92);padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;}
+    .moves{max-height:240px;overflow:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.12);}
+    .move-table{width:100%;border-collapse:collapse;font-size:13px;}
+    .move-table th,.move-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap;}
+    .move-table thead th{position:sticky;top:0;background:rgba(0,0,0,0.25);backdrop-filter:blur(10px);font-size:12px;color:rgba(255,255,255,0.75);text-transform:uppercase;}
+    .small{font-size:14px;color:rgba(255,255,255,0.72);line-height:1.35;}
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+    .field>span{font-size:12px;color:rgba(255,255,255,0.72);}
+    .input{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background: #1E2A3C;
+      color:rgba(255,255,255,0.92);padding:9px 10px;outline:none;font-size:13px;}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(18px);padding:10px 12px;border-radius:14px;
+      border:1px solid rgba(255,255,255,0.16);background:rgba(0,0,0,0.70);color:rgba(255,255,255,0.95);box-shadow:0 10px 40px rgba(0,0,0,0.45);
+      opacity:0;pointer-events:none;transition:opacity .14s ease,transform .14s ease;max-width:min(92vw,520px);text-align:center;font-size:13px;z-index:40;}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    .toast[data-kind="ok"]{border-color:rgba(134,239,172,0.32);}
+    .toast[data-kind="warn"]{border-color:rgba(253,224,71,0.35);}
+    .toast[data-kind="error"]{border-color:rgba(251,113,133,0.35);}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.60);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+    .modal-card{width:min(540px,92vw);background:rgba(18,25,43,0.92);border:1px solid rgba(255,255,255,0.14);border-radius:18px;
+      box-shadow:0 20px 80px rgba(0,0,0,0.6);padding:14px;backdrop-filter:blur(14px);}
+    .modal-title{font-size:14px;font-weight:800;margin-bottom:10px;color:rgba(255,255,255,0.9);}
+    .modal-ta{width:100%;min-height:220px;resize:vertical;border-radius:12px;border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.18);color:rgba(255,255,255,0.92);padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;}
+    .promo-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+    .promo-btn{appearance:none;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);border-radius:14px;padding:12px 10px;font-size:36px;cursor:pointer;}
+    .promo-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.26);}
+    .drag-piece{position:fixed;left:0;top:0;transform:translate(-9999px,-9999px);font-size:clamp(30px,7vw,56px);line-height:1;
+      filter:drop-shadow(0 10px 12px rgba(0,0,0,0.35));pointer-events:none;z-index:60;font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Apple Symbols",ui-sans-serif,system-ui;}
+    code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;}
+
+    /* Debug dock */
+    .debug-dock{
+      position:fixed; right:14px; bottom:14px;
+      width:min(560px, 94vw);
+      background:rgba(0,0,0,0.72);
+      border:1px solid rgba(255,255,255,0.16);
+      border-radius:14px;
+      backdrop-filter:blur(10px);
+      box-shadow:0 14px 60px rgba(0,0,0,0.5);
+      z-index:80;
+      overflow:hidden;
+      display:flex; flex-direction:column;
+    }
+    .debug-head{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      padding:8px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      font-size:12px;
+      color:rgba(255,255,255,0.85);
+    }
+    .debug-head .left{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .debug-badge{padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.16);background:rgba(255,255,255,0.06);font-weight:700;}
+    .dbg-btn{
+      appearance:none;border:1px solid rgba(255,255,255,0.16);
+      background:rgba(255,255,255,0.08);
+      color:rgba(255,255,255,0.90);
+      padding:6px 8px;border-radius:10px;
+      font-size:12px;font-weight:700;cursor:pointer;
+    }
+    .dbg-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.22);}
+    .debug-lines{
+      margin:0;
+      padding:8px 10px;
+      max-height:260px;
+      overflow:auto;
+      font-size:11px;
+      line-height:1.35;
+      color:rgba(255,255,255,0.86);
+      white-space:pre-wrap;
+    }
+    .debug-dock.collapsed .debug-lines{display:none;}
+    .debug-fab{
+      position:fixed; right:14px; bottom:14px;
+      width:44px; height:44px; border-radius:999px;
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(0,0,0,0.70);
+      box-shadow:0 14px 60px rgba(0,0,0,0.5);
+      z-index:79;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    .debug-fab:hover{background:rgba(0,0,0,0.78);}
+
+    /* Engine assistance suggestion highlight (only visible when active) */
+    .square.suggest-from{ box-shadow: inset 0 0 0 3px rgba(134,239,172,0.55); }
+    .square.suggest-to{ box-shadow: inset 0 0 0 3px rgba(125,211,252,0.55); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div>
+      <div class="brand">GenesisL1 Chess EVM Convolutional Neural Network</div>
+      <div id="status" class="status">Loading…</div>
+    </div>
+    <div class="actions">
+      <button id="newGameBtn" class="btn" type="button">New</button>
+      <button id="undoBtn" class="btn" type="button">Undo</button>
+      <button id="flipBtn" class="btn" type="button">Flip</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="board-section">
+      <!-- Clocks -->
+      <div class="clockbar" aria-label="Chess clocks">
+        <div id="clockBlack" class="clock" aria-label="Black clock">
+          <span class="label">Black</span>
+          <span id="clockBlackTime" class="time">1:30:00</span>
+        </div>
+        <div class="clock-center" aria-label="Clock info">
+          <div id="clockTC" class="tc">90+30</div>
+          <div id="clockTurn" class="turn">White to move</div>
+        </div>
+        <div id="clockWhite" class="clock" aria-label="White clock">
+          <span class="label">White</span>
+          <span id="clockWhiteTime" class="time">1:30:00</span>
+        </div>
+      </div>
+
+      <!-- Captured pieces (counts) -->
+      <div class="capturedbar" aria-label="Captured pieces">
+        <div id="capsByBlack" class="captured" aria-label="Pieces captured by Black"></div>
+        <div class="captured-center" aria-hidden="true">Captured</div>
+        <div id="capsByWhite" class="captured" aria-label="Pieces captured by White"></div>
+      </div>
+
+      <div id="board" class="board" role="application" aria-label="Chessboard"></div>
+      <div class="hint">
+        Drag & drop only lands on legal squares. Search mode: <code>inferTopK</code> + offchain fast-score + onchain <code>inferBest</code> refinement (and optional 2‑ply).
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="panel">
+        <div class="panel-title">Moves</div>
+        <div class="moves" id="movesScroller">
+          <table class="move-table">
+            <thead><tr><th>#</th><th>White</th><th>Black</th></tr></thead>
+            <tbody id="moveBody"></tbody>
+          </table>
+        </div>
+        <div class="row">
+          <button id="copyPgnBtn" class="btn btn-ghost" type="button">Copy PGN</button>
+          <button id="pastePgnBtn" class="btn btn-ghost" type="button">Paste / Load PGN</button>
+          <button id="downloadPgnBtn" class="btn btn-ghost" type="button">Download</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Position (FEN)</div>
+        <textarea id="fen" class="fen" readonly></textarea>
+        <div class="row">
+          <button id="copyFenBtn" class="btn btn-ghost" type="button">Copy FEN</button>
+          <button id="loadFenBtn" class="btn btn-ghost" type="button">Load FEN</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Chess EVM Neural Network Engine</div>
+
+        <label class="field">
+          <span>GenesisL1 RPC URL</span>
+          <input id="rpcUrl" class="input" value="https://rpc.genesisl1.org" />
+        </label>
+
+        <label class="field">
+          <span>Neural network smart ontract address</span>
+          <input id="contractAddr" class="input" value="0x37D6518FbABd982e1908251A9cb4aD97b48BB989" />
+        </label>
+
+        <div class="row">
+          <button id="connectBtn" class="btn" type="button">Connect</button>
+          <button id="engineMoveBtn" class="btn" type="button">Ask engine to move</button>
+        </div>
+
+        <!-- Engine assistance (suggest, no move) -->
+        <div class="row">
+          <button id="engineSuggestBtn" class="btn btn-ghost" type="button">Suggest move</button>
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Engine assistance</span>
+            <select id="assistMode" class="input">
+              <option value="off" selected>Off</option>
+              <option value="once">Suggest next move</option>
+              <option value="always">Suggest every move</option>
+            </select>
+          </label>
+        </div>
+        <div id="assistInfo" class="small" style="margin-top:8px;"></div>
+
+        <div class="row">
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Auto-play</span>
+            <select id="autoPlay" class="input">
+              <option value="off">Off</option>
+              <option value="black" selected>Engine plays Black</option>
+              <option value="white">Engine plays White</option>
+              <option value="both">Engine plays Both</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Search mode</span>
+            <select id="searchMode" class="input">
+              <option value="1ply">1‑ply (split refine)</option>
+              <option value="1plyWide" selected>1‑ply widened (refine all)</option>
+              <option value="2ply">2‑ply (my→opp→my)</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="modeInfo" class="small" style="margin-top:8px;"></div>
+
+        <label class="field">
+          <span>eth_call gasLimit</span>
+          <input id="callGas" class="input" value="2000000000" />
+        </label>
+
+        <div class="row">
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Top‑K (1..32)</span>
+            <input id="topK" class="input" value="32" />
+          </label>
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Search candidates (<=32)</span>
+            <input id="candN" class="input" value="4" />
+          </label>
+        </div>
+
+        <div class="row">
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>alpha (0..255)</span>
+            <input id="alpha" class="input" value="224" />
+          </label>
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Refine N (0..32)</span>
+            <input id="refineN" class="input" value="3" />
+          </label>
+        </div>
+
+        <!-- Randomness controls intentionally hidden (variety handled by a tiny opening-book on Black's first move only) -->
+        <div class="row" hidden>
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Opening variety plies</span>
+            <input id="openingPlies" class="input" value="0" />
+          </label>
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>randMargin (0 for max strength)</span>
+            <input id="randMargin" class="input" value="0" />
+          </label>
+        </div>
+
+        <div class="row">
+          <button id="copyDebugBtn" class="btn btn-ghost" type="button">Copy debug JSON</button>
+          <button id="clearDockBtn" class="btn btn-ghost" type="button">Clear dock</button>
+        </div>
+
+        
+      </div>
+
+      <!-- P2P panel -->
+      <div class="panel" id="p2pPanel">
+        <div class="panel-title">P2P play (serverless)</div>
+        <div class="small">
+          Host creates an offer → joiner creates an answer → host uses the answer.
+          Share codes via any chat. Uses WebRTC data channel (no app server).
+        </div>
+
+        <div class="row">
+          <label class="field" style="flex:1;margin-top:0;">
+            <span>Mode</span>
+            <select id="p2pMode" class="input">
+              <option value="off" selected>Off (local)</option>
+              <option value="host">Host</option>
+              <option value="join">Join</option>
+            </select>
+          </label>
+
+          <label id="hostColorField" class="field" style="flex:1;margin-top:0;" hidden>
+            <span>Host plays</span>
+            <select id="hostColor" class="input">
+              <option value="w" selected>White</option>
+              <option value="b">Black</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="p2pHostSection" hidden>
+          <div class="row">
+            <button id="p2pHostMakeOffer" class="btn" type="button">Create offer</button>
+            <button id="p2pCopyHostOffer" class="btn btn-ghost" type="button">Copy offer</button>
+          </div>
+          <label class="field">
+            <span>Offer (send to joiner)</span>
+            <textarea id="p2pHostOffer" class="fen" style="min-height:92px;" spellcheck="false" readonly></textarea>
+          </label>
+          <label class="field">
+            <span>Answer (paste from joiner)</span>
+            <textarea id="p2pHostAnswer" class="fen" style="min-height:92px;" spellcheck="false"></textarea>
+          </label>
+          <div class="row">
+            <button id="p2pHostSetAnswer" class="btn" type="button">Use answer</button>
+            <button id="p2pDisconnect" class="btn btn-ghost" type="button">Disconnect</button>
+          </div>
+        </div>
+
+        <div id="p2pJoinSection" hidden>
+          <label class="field">
+            <span>Offer (paste from host)</span>
+            <textarea id="p2pJoinOffer" class="fen" style="min-height:92px;" spellcheck="false"></textarea>
+          </label>
+          <div class="row">
+            <button id="p2pJoinMakeAnswer" class="btn" type="button">Create answer</button>
+            <button id="p2pCopyJoinAnswer" class="btn btn-ghost" type="button">Copy answer</button>
+          </div>
+          <label class="field">
+            <span>Answer (send to host)</span>
+            <textarea id="p2pJoinAnswer" class="fen" style="min-height:92px;" spellcheck="false" readonly></textarea>
+          </label>
+          <div class="row">
+            <button id="p2pDisconnect2" class="btn btn-ghost" type="button">Disconnect</button>
+          </div>
+        </div>
+
+        <div id="p2pStatus" class="small" style="margin-top:8px;"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="promoModal" class="modal" aria-modal="true" role="dialog" hidden>
+  <div class="modal-card">
+    <div class="modal-title">Choose promotion</div>
+    <div id="promoChoices" class="promo-row"></div>
+    <button id="promoCancel" class="btn btn-ghost" style="width:100%;" type="button">Cancel</button>
+  </div>
+</div>
+
+<div id="pgnModal" class="modal" aria-modal="true" role="dialog" hidden>
+  <div class="modal-card">
+    <div class="modal-title">Paste PGN</div>
+    <textarea id="pgnText" class="modal-ta" spellcheck="false"></textarea>
+    <div class="row">
+      <button id="pgnLoad" class="btn" type="button">Load PGN</button>
+      <button id="pgnCancel" class="btn btn-ghost" type="button">Cancel</button>
+    </div>
+    <div class="small" style="margin-top:8px;">Loads into chess.js, then engine can continue from that position.</div>
+  </div>
+</div>
+
+<!-- Debug dock -->
+<div id="debugDock" class="debug-dock">
+  <div class="debug-head">
+    <div class="left">
+      <span class="debug-badge">Debug</span>
+      <span id="dbgState">idle</span>
+      <span id="dbgConn" class="debug-badge" style="font-weight:650;">not connected</span>
+    </div>
+    <div class="right" style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button id="dbgCollapse" class="dbg-btn" type="button">Collapse</button>
+      <button id="dbgCopy" class="dbg-btn" type="button">Copy</button>
+      <button id="dbgClear" class="dbg-btn" type="button">Clear</button>
+      <button id="dbgHide" class="dbg-btn" type="button">Hide</button>
+    </div>
+  </div>
+  <pre id="debugLines" class="debug-lines"></pre>
+</div>
+<div id="debugFab" class="debug-fab" hidden title="Show debug">🐞</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+
+<script>
+(() => {
+  const FILES = ['a','b','c','d','e','f','g','h'];
+
+  const PIECE_UNICODE = {
+    w: { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
+    b: { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' },
+  };
+  const PIECE_NAME = { p:'pawn', n:'knight', b:'bishop', r:'rook', q:'queen', k:'king' };
+  const PIECE_VALUE = { p:100, n:320, b:330, r:500, q:900, k:20000 };
+
+  // Candidate priority tuning (force big captures into consideration)
+  const CAP_PRI_SCALE = 100000;
+  const CHECK_PRI_BONUS = 300000;
+
+  // Mirror contract scales used for fastScore
+  const MY_CAP_SCALE  = 64;
+  const OPP_CAP_SCALE = 48;
+
+  // Extra material sanity: discourage "hang more than you win" unless giving check/mate
+  const HANG_PEN_MINOR = 16;  // per (oppCapMax - myCap) for minor-or-less hangs
+  const HANG_PEN_ROOK  = 32;  // for rook-level hangs
+  const HANG_PEN_QUEEN = 64;  // for queen-level hangs
+
+  // 2‑ply scoring: score2 = fastScore - oppPenalty + MY2_BONUS_SCALE*max(0,my2Logit)
+  const MY2_BONUS_SCALE = 0.65;
+
+  // If opponent can win big material immediately, assume they will (for 2‑ply line simulation realism)
+  const OPP_CAPTURE_OVERRIDE_AT = 500; // rook+ (500) or queen (900)
+
+  // Limit parallel RPC calls to avoid throttling
+  const MAX_PAR_CALLS = 4;
+
+  // Terminal scoring (UI-side). Must dominate logits/material heuristics.
+  const MATE_SCORE = 1e12;
+
+  // Opening book (Black's first move only): classic replies with hidden variety at ply 1 only.
+  // Opening book:
+  // - OPTIONAL: White's first move from the *initial* position (ply 0)
+  // - Black's first reply to White's first move (ply 1)
+  // Variety is ONLY from these book picks; engine search afterwards stays deterministic.
+
+  const OPENING_BOOK_WHITE = [
+    { uci: 'e2e4', w: 38, name: "King's Pawn (1.e4)" },
+    { uci: 'd2d4', w: 30, name: "Queen's Pawn (1.d4)" },
+    { uci: 'c2c4', w: 16, name: "English (1.c4)" },
+    { uci: 'g1f3', w:  8, name: "Reti (1.Nf3)" },
+    { uci: 'b1c3', w:  2, name: "Dunst (1.Nc3)" },
+    { uci: 'g2g3', w:  2, name: "King's Fianchetto (1.g3)" },
+    { uci: 'b2b3', w:  2, name: "Larsen (1.b3)" },
+    { uci: 'f2f4', w:  2, name: "Bird (1.f4)" },
+
+    // Offbeat (low weight, but adds a lot of variety)
+    { uci: 'c2c3', w: 1, name: "Saragossa (1.c3)" },
+    { uci: 'e2e3', w: 1, name: "Van 't Kruijs (1.e3)" },
+    { uci: 'd2d3', w: 1, name: "Mieses (1.d3)" },
+    { uci: 'b2b4', w: 1, name: "Sokolsky (1.b4)" },
+    { uci: 'a2a3', w: 1, name: "Anderssen (1.a3)" },
+    { uci: 'h2h3', w: 1, name: "Clemenz (1.h3)" },
+    { uci: 'a2a4', w: 1, name: "Ware (1.a4)" },
+    { uci: 'h2h4', w: 1, name: "Desprez (1.h4)" },
+    { uci: 'g2g4', w: 1, name: "Grob (1.g4)" },
+    { uci: 'f2f3', w: 1, name: "Barnes (1.f3)" },
+    { uci: 'g1h3', w: 1, name: "Amar (1.Nh3)" },
+    { uci: 'b1a3', w: 1, name: "Na3 (1.Na3)" },
+  ];
+
+  // Keys are White's FIRST MOVE SAN from chess.js (e4, d4, c4, Nf3, etc.)
+  const OPENING_BOOK_BLACK = {
+    // --- Core mainstream first moves ---
+    "e4": [
+      { uci: 'e7e5', w: 30, name: "Open Game (…e5)" },
+      { uci: 'c7c5', w: 26, name: "Sicilian (…c5)" },
+      { uci: 'e7e6', w: 12, name: "French (…e6)" },
+      { uci: 'c7c6', w: 10, name: "Caro‑Kann (…c6)" },
+      { uci: 'd7d5', w:  9, name: "Scandinavian (…d5)" },
+      { uci: 'd7d6', w:  6, name: "Pirc/Modern (…d6)" },
+      { uci: 'g7g6', w:  4, name: "Modern (…g6)" },
+      { uci: 'g8f6', w:  4, name: "Alekhine (…Nf6)" },
+      { uci: 'b8c6', w:  2, name: "Nimzowitsch (…Nc6)" },
+      { uci: 'b7b6', w:  2, name: "Owen's (…b6)" },
+      { uci: 'f7f5', w:  1, name: "Fred / Duras (…f5)" },
+      { uci: 'a7a6', w:  1, name: "St. George (…a6)" },
+      { uci: 'g7g5', w:  1, name: "Borg (…g5)" },
+    ],
+
+    "d4": [
+      { uci: 'd7d5', w: 28, name: "…d5 (QG / Slav / QGD family)" },
+      { uci: 'g8f6', w: 22, name: "…Nf6 (Indian family)" },
+      { uci: 'e7e6', w: 14, name: "…e6 (QGD / Nimzo setups)" },
+      { uci: 'g7g6', w: 12, name: "…g6 (KID / Grünfeld setups)" },
+      { uci: 'f7f5', w: 10, name: "Dutch (…f5)" },
+      { uci: 'c7c5', w: 10, name: "Benoni / Benko setups (…c5)" },
+      { uci: 'c7c6', w:  6, name: "Slav (…c6)" },
+      { uci: 'd7d6', w:  4, name: "Old Indian (…d6)" },
+      { uci: 'b7b6', w:  4, name: "English Defense (…b6)" },
+      { uci: 'b8c6', w:  2, name: "Queen's Knight (…Nc6)" },
+      { uci: 'a7a6', w:  1, name: "…a6 (offbeat)" },
+    ],
+
+    "c4": [
+      { uci: 'e7e5', w: 24, name: "Reverse Sicilian (…e5)" },
+      { uci: 'g8f6', w: 22, name: "…Nf6" },
+      { uci: 'c7c5', w: 16, name: "Symmetrical (…c5)" },
+      { uci: 'e7e6', w: 14, name: "…e6" },
+      { uci: 'g7g6', w: 10, name: "…g6" },
+      { uci: 'c7c6', w:  6, name: "Anglo‑Slav (…c6)" },
+      { uci: 'd7d5', w:  6, name: "…d5" },
+      { uci: 'b7b6', w:  6, name: "…b6" },
+      { uci: 'f7f5', w:  2, name: "…f5 (offbeat)" },
+      { uci: 'b8c6', w:  2, name: "…Nc6" },
+      { uci: 'a7a6', w:  1, name: "…a6 (offbeat)" },
+    ],
+
+    "Nf3": [
+      { uci: 'd7d5', w: 22, name: "…d5" },
+      { uci: 'g8f6', w: 22, name: "…Nf6" },
+      { uci: 'c7c5', w: 16, name: "…c5" },
+      { uci: 'e7e6', w: 12, name: "…e6" },
+      { uci: 'g7g6', w: 10, name: "…g6" },
+      { uci: 'b8c6', w:  8, name: "…Nc6" },
+      { uci: 'c7c6', w:  5, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+      { uci: 'f7f5', w:  2, name: "…f5 (offbeat)" },
+      { uci: 'a7a6', w:  1, name: "…a6 (offbeat)" },
+    ],
+
+    // --- Common “second-tier” first moves ---
+    "Nc3": [
+      { uci: 'd7d5', w: 22, name: "…d5" },
+      { uci: 'g8f6', w: 20, name: "…Nf6" },
+      { uci: 'e7e5', w: 16, name: "…e5" },
+      { uci: 'c7c5', w: 14, name: "…c5" },
+      { uci: 'g7g6', w: 10, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+      { uci: 'b8c6', w:  3, name: "…Nc6" },
+    ],
+
+    "g3": [
+      { uci: 'd7d5', w: 24, name: "…d5" },
+      { uci: 'g8f6', w: 20, name: "…Nf6" },
+      { uci: 'e7e5', w: 18, name: "…e5" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'g7g6', w: 10, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'c7c6', w:  4, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    "b3": [
+      { uci: 'e7e5', w: 22, name: "…e5" },
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'g8f6', w: 16, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'g7g6', w:  6, name: "…g6" },
+      { uci: 'b8c6', w:  4, name: "…Nc6" },
+      { uci: 'b7b6', w:  3, name: "…b6" },
+      { uci: 'c7c6', w:  3, name: "…c6" },
+    ],
+
+    "f4": [
+      { uci: 'd7d5', w: 24, name: "Bird: …d5" },
+      { uci: 'e7e5', w: 22, name: "From's Gambit (…e5)" },
+      { uci: 'g8f6', w: 16, name: "…Nf6" },
+      { uci: 'c7c5', w: 10, name: "…c5" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'f7f5', w:  4, name: "…f5 (symmetry)" },
+      { uci: 'c7c6', w:  4, name: "…c6" },
+    ],
+
+    "b4": [
+      { uci: 'e7e5', w: 26, name: "Sokolsky: …e5" },
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 10, name: "…c5" },
+      { uci: 'a7a5', w:  8, name: "…a5 (immediate challenge)" },
+      { uci: 'b7b5', w:  6, name: "…b5 (symmetry)" },
+      { uci: 'e7e6', w:  6, name: "…e6" },
+      { uci: 'g7g6', w:  4, name: "…g6" },
+    ],
+
+    "c3": [
+      { uci: 'd7d5', w: 22, name: "Saragossa: …d5" },
+      { uci: 'e7e5', w: 20, name: "…e5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'e7e6', w: 10, name: "…e6" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b8c6', w:  4, name: "…Nc6" },
+      { uci: 'b7b6', w:  3, name: "…b6" },
+    ],
+
+    "e3": [
+      { uci: 'd7d5', w: 22, name: "…d5" },
+      { uci: 'g8f6', w: 18, name: "…Nf6" },
+      { uci: 'e7e5', w: 16, name: "…e5" },
+      { uci: 'c7c5', w: 14, name: "…c5" },
+      { uci: 'e7e6', w: 12, name: "…e6" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    "d3": [
+      { uci: 'd7d5', w: 22, name: "…d5" },
+      { uci: 'g8f6', w: 18, name: "…Nf6" },
+      { uci: 'e7e5', w: 16, name: "…e5" },
+      { uci: 'c7c5', w: 14, name: "…c5" },
+      { uci: 'e7e6', w: 12, name: "…e6" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    // --- Offbeat first moves (still give Black variety) ---
+    "a3": [
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'e7e5', w: 18, name: "…e5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    "h3": [
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'e7e5', w: 18, name: "…e5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    "a4": [
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'e7e5', w: 18, name: "…e5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    "h4": [
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'e7e5', w: 18, name: "…e5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b7b6', w:  4, name: "…b6" },
+    ],
+
+    "g4": [
+      { uci: 'd7d5', w: 28, name: "Grob: …d5" },
+      { uci: 'e7e5', w: 18, name: "…e5" },
+      { uci: 'h7h5', w: 16, name: "…h5" },
+      { uci: 'g8f6', w: 12, name: "…Nf6" },
+      { uci: 'c7c5', w:  8, name: "…c5" },
+      { uci: 'g7g6', w:  6, name: "…g6" },
+      { uci: 'f7f5', w:  4, name: "…f5" },
+    ],
+
+    "f3": [
+      { uci: 'e7e5', w: 24, name: "Barnes: …e5" },
+      { uci: 'd7d5', w: 20, name: "…d5" },
+      { uci: 'g8f6', w: 14, name: "…Nf6" },
+      { uci: 'c7c5', w: 12, name: "…c5" },
+      { uci: 'g7g6', w:  8, name: "…g6" },
+      { uci: 'e7e6', w:  8, name: "…e6" },
+    ],
+
+    "Nh3": [
+      { uci: 'd7d5', w: 22, name: "…d5" },
+      { uci: 'g8f6', w: 18, name: "…Nf6" },
+      { uci: 'e7e5', w: 16, name: "…e5" },
+      { uci: 'c7c5', w: 14, name: "…c5" },
+      { uci: 'g7g6', w: 10, name: "…g6" },
+      { uci: 'e7e6', w: 10, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b8c6', w:  4, name: "…Nc6" },
+    ],
+
+    "Na3": [
+      { uci: 'd7d5', w: 22, name: "…d5" },
+      { uci: 'g8f6', w: 18, name: "…Nf6" },
+      { uci: 'e7e5', w: 16, name: "…e5" },
+      { uci: 'c7c5', w: 14, name: "…c5" },
+      { uci: 'g7g6', w: 10, name: "…g6" },
+      { uci: 'e7e6', w: 10, name: "…e6" },
+      { uci: 'c7c6', w:  6, name: "…c6" },
+      { uci: 'b8c6', w:  4, name: "…Nc6" },
+    ],
+
+    // Fallback so *any* weird first move still gets variety:
+    "__default": [
+      { uci: 'd7d5', w: 28, name: "Default: …d5" },
+      { uci: 'g8f6', w: 24, name: "Default: …Nf6" },
+      { uci: 'e7e5', w: 18, name: "Default: …e5" },
+      { uci: 'c7c5', w: 16, name: "Default: …c5" },
+      { uci: 'e7e6', w: 10, name: "Default: …e6" },
+      { uci: 'g7g6', w:  8, name: "Default: …g6" },
+      { uci: 'c7c6', w:  6, name: "Default: …c6" },
+      { uci: 'b7b6', w:  4, name: "Default: …b6" },
+    ],
+  };
+
+
+  // --- DOM ---
+  const boardEl = document.getElementById('board');
+  const p2pPanelEl = document.getElementById('p2pPanel');
+  if (p2pPanelEl && boardEl) {
+    boardEl.insertAdjacentElement('afterend', p2pPanelEl); // puts it right below the board
+    p2pPanelEl.classList.add('p2p-under-board');
+  }
+  const statusEl = document.getElementById('status');
+  const fenEl = document.getElementById('fen');
+  const moveBodyEl = document.getElementById('moveBody');
+  const movesScrollerEl = document.getElementById('movesScroller');
+  const toastEl = document.getElementById('toast');
+
+  const newGameBtn = document.getElementById('newGameBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const flipBtn = document.getElementById('flipBtn');
+
+  const copyFenBtn = document.getElementById('copyFenBtn');
+  const loadFenBtn = document.getElementById('loadFenBtn');
+  const copyPgnBtn = document.getElementById('copyPgnBtn');
+  const pastePgnBtn = document.getElementById('pastePgnBtn');
+  const downloadPgnBtn = document.getElementById('downloadPgnBtn');
+
+  const rpcUrlEl = document.getElementById('rpcUrl');
+  const contractAddrEl = document.getElementById('contractAddr');
+  const connectBtn = document.getElementById('connectBtn');
+  const engineMoveBtn = document.getElementById('engineMoveBtn');
+  const autoPlayEl = document.getElementById('autoPlay');
+  const searchModeEl = document.getElementById('searchMode');
+  const modeInfoEl = document.getElementById('modeInfo');
+
+  const engineSuggestBtn = document.getElementById('engineSuggestBtn');
+  const assistModeEl = document.getElementById('assistMode');
+  const assistInfoEl = document.getElementById('assistInfo');
+
+  const callGasEl = document.getElementById('callGas');
+  const topKEl = document.getElementById('topK');
+  const candNEl = document.getElementById('candN');
+  const alphaEl = document.getElementById('alpha');
+  const refineNEl = document.getElementById('refineN');
+  // Hidden (kept for compatibility, but not used for randomness anymore)
+  const openingPliesEl = document.getElementById('openingPlies');
+  const randMarginEl = document.getElementById('randMargin');
+
+  const copyDebugBtn = document.getElementById('copyDebugBtn');
+  const clearDockBtn = document.getElementById('clearDockBtn');
+
+  const promoModalEl = document.getElementById('promoModal');
+  const promoChoicesEl = document.getElementById('promoChoices');
+  const promoCancelBtn = document.getElementById('promoCancel');
+
+  const pgnModalEl = document.getElementById('pgnModal');
+  const pgnTextEl = document.getElementById('pgnText');
+  const pgnLoadBtn = document.getElementById('pgnLoad');
+  const pgnCancelBtn = document.getElementById('pgnCancel');
+
+  // P2P DOM
+  const p2pModeEl = document.getElementById('p2pMode');
+  const hostColorFieldEl = document.getElementById('hostColorField');
+  const hostColorEl = document.getElementById('hostColor');
+
+  const p2pHostSectionEl = document.getElementById('p2pHostSection');
+  const p2pHostMakeOfferBtn = document.getElementById('p2pHostMakeOffer');
+  const p2pCopyHostOfferBtn = document.getElementById('p2pCopyHostOffer');
+  const p2pHostOfferEl = document.getElementById('p2pHostOffer');
+  const p2pHostAnswerEl = document.getElementById('p2pHostAnswer');
+  const p2pHostSetAnswerBtn = document.getElementById('p2pHostSetAnswer');
+  const p2pDisconnectBtn = document.getElementById('p2pDisconnect');
+
+  const p2pJoinSectionEl = document.getElementById('p2pJoinSection');
+  const p2pJoinOfferEl = document.getElementById('p2pJoinOffer');
+  const p2pJoinMakeAnswerBtn = document.getElementById('p2pJoinMakeAnswer');
+  const p2pCopyJoinAnswerBtn = document.getElementById('p2pCopyJoinAnswer');
+  const p2pJoinAnswerEl = document.getElementById('p2pJoinAnswer');
+  const p2pDisconnectBtn2 = document.getElementById('p2pDisconnect2');
+  const p2pStatusEl = document.getElementById('p2pStatus');
+
+  // Clocks DOM
+  const clockWhiteWrapEl = document.getElementById('clockWhite');
+  const clockBlackWrapEl = document.getElementById('clockBlack');
+  const clockWhiteTimeEl = document.getElementById('clockWhiteTime');
+  const clockBlackTimeEl = document.getElementById('clockBlackTime');
+  const clockTurnEl = document.getElementById('clockTurn');
+  const clockTCEl = document.getElementById('clockTC');
+
+  // Captured pieces DOM
+  const capsByBlackEl = document.getElementById('capsByBlack');
+  const capsByWhiteEl = document.getElementById('capsByWhite');
+
+  // Debug dock
+  const debugDockEl = document.getElementById('debugDock');
+  const debugLinesEl = document.getElementById('debugLines');
+  const debugFabEl = document.getElementById('debugFab');
+  const dbgCollapseBtn = document.getElementById('dbgCollapse');
+  const dbgCopyBtn = document.getElementById('dbgCopy');
+  const dbgClearBtn = document.getElementById('dbgClear');
+  const dbgHideBtn = document.getElementById('dbgHide');
+  const dbgStateEl = document.getElementById('dbgState');
+  const dbgConnEl = document.getElementById('dbgConn');
+
+  // --- Game ---
+  const game = new Chess();
+  const DEFAULT_START_FEN = game.fen();
+  let START_FEN = DEFAULT_START_FEN;
+
+  let orientation = 'white';
+  let selectedSquare = null;
+  let legalMovesFromSelected = [];
+  let promotionPending = null;
+  let pointerState = null;
+  let dragFromSquare = null;
+  const squareMap = new Map();
+
+  // --- Engine assistance state ---
+  const ASSIST = {
+    suggestion: null, // {uci,san,from,to,ply,fen,turn}
+    pending: false,
+  };
+
+  function clearSuggestion(){
+    ASSIST.suggestion = null;
+    if(assistInfoEl) assistInfoEl.textContent = "";
+  }
+  function setSuggestion(uci, san){
+    if(!uci || typeof uci !== 'string' || uci.length < 4) return;
+    const from = uci.slice(0,2);
+    const to = uci.slice(2,4);
+    ASSIST.suggestion = { uci, san: san || uci, from, to, ply: plyCount(), fen: game.fen(), turn: game.turn() };
+    if(assistInfoEl){
+      assistInfoEl.textContent = `Suggested: ${ASSIST.suggestion.san} (${ASSIST.suggestion.uci})`;
+    }
+  }
+
+  // --- P2P state ---
+  const RTC_CONFIG = {
+    iceServers: [
+      { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    ]
+  };
+
+  const P2P = {
+    mode: 'off',          // 'off' | 'host' | 'join'
+    role: 'local',        // 'host' | 'join' | 'local'
+    hostColor: 'w',       // 'w'|'b'
+    myColor: null,        // 'w'|'b'
+    peerColor: null,      // 'w'|'b'
+    pc: null,
+    dc: null,
+    connected: false,
+    applyingRemote: false,
+    // clock snapshots by ply for undo in p2p (host only)
+    clockByPly: new Map(),
+    savedAutoPlay: null,
+    lastSentPly: -1
+  };
+
+  function p2pIsConnected(){
+    return !!(P2P.dc && P2P.dc.readyState === 'open');
+  }
+  function p2pCanSend(){
+    return p2pIsConnected() && !P2P.applyingRemote;
+  }
+
+  // --- Engine connection ---
+  let provider = null;
+  let contract = null;
+  let engineInfo = { rpcUrl:null, contract:null, chainId:null, block:null, ready:false };
+  let thinking = false;
+
+  // --- Debug state ---
+  const DBG = {
+    env: { href: location.href, protocol: location.protocol },
+    engineInfo: null,
+    lastTopK: null,
+    lastRefines: [],
+    last2Ply: [],
+    lastError: null,
+    logs: [],
+  };
+  const DOCK = { lines: [], maxLines: 420 };
+
+  function dock(line){
+    const ts = new Date().toISOString().slice(11,19);
+    DOCK.lines.push(`[${ts}] ${String(line)}`);
+    if(DOCK.lines.length > DOCK.maxLines) DOCK.lines.splice(0, DOCK.lines.length - DOCK.maxLines);
+    debugLinesEl.textContent = DOCK.lines.join("\n");
+    debugLinesEl.scrollTop = debugLinesEl.scrollHeight;
+  }
+  function dockClear(){ DOCK.lines.length = 0; debugLinesEl.textContent = ""; }
+  function setDockState(s){ dbgStateEl.textContent = s; }
+  function setDockConn(s){ dbgConnEl.textContent = s; }
+
+  function safeStringify(x){
+    try{
+      return JSON.stringify(x, (k,v)=>typeof v === 'bigint' ? v.toString() : v);
+    }catch(e){
+      return String(x);
+    }
+  }
+  function setError(err, where){
+    const msg = (err && (err.shortMessage || err.message)) ? (err.shortMessage || err.message) : String(err);
+    DBG.lastError = { where, msg, raw: safeStringify(err) };
+    dock(`❌ ${where}: ${msg}`);
+  }
+
+  // --- Toast ---
+  let toastTimer = null;
+  function showToast(msg, kind='info') {
+    toastEl.textContent = String(msg);
+    toastEl.dataset.kind = kind;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+  }
+
+  async function copyText(text) {
+    const str = String(text);
+    try { await navigator.clipboard.writeText(str); showToast('Copied', 'ok'); return true; } catch(e) {}
+    const ta = document.createElement('textarea');
+    ta.value = str; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.left='-9999px'; ta.style.top='0';
+    document.body.appendChild(ta); ta.select();
+    let ok=false; try { ok=document.execCommand('copy'); } catch(e) { ok=false; }
+    ta.remove();
+    showToast(ok?'Copied':'Copy failed', ok?'ok':'error');
+    return ok;
+  }
+
+  function downloadText(filename, text) {
+    const blob = new Blob([String(text)], { type:'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  // ---------------------------
+  // Chess clocks (FIDE 90+30, start on first move)
+  // ---------------------------
+  let timeForfeit = null; // { loser:'w'|'b', winner:'w'|'b' }
+
+  function sideName(c){ return c==='w'?'White':'Black'; }
+  function isHardGameOver(){ return !!timeForfeit || game.game_over(); }
+
+  const CLOCK = {
+    baseMs: 90 * 60 * 1000, // 90 minutes each
+    incMs: 30 * 1000,       // +30 seconds per move
+    remain: { w: 90 * 60 * 1000, b: 90 * 60 * 1000 },
+    active: 'w',
+    running: false,
+    started: false,         // clocks start ONLY when first move is made
+    lastTs: null,
+    moveStack: [] // {color, spentMs}
+  };
+
+  function fmtClock(ms){
+    if(!Number.isFinite(ms)) ms = 0;
+    if(ms < 0) ms = 0;
+    const total = Math.floor(ms / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if(h > 0){
+      return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function clockEffectiveRemain(color){
+    let ms = CLOCK.remain[color];
+    if(CLOCK.running && CLOCK.active === color && CLOCK.lastTs != null){
+      ms -= (performance.now() - CLOCK.lastTs);
+    }
+    return ms;
+  }
+
+  function clockStopAndGetSpent(){
+    if(!CLOCK.running || CLOCK.lastTs == null) return 0;
+    const now = performance.now();
+    const spent = now - CLOCK.lastTs;
+    CLOCK.remain[CLOCK.active] -= spent;
+    CLOCK.running = false;
+    CLOCK.lastTs = null;
+    return spent;
+  }
+
+  function clockStartFor(color){
+    CLOCK.active = color;
+    if(!CLOCK.started || isHardGameOver()){
+      CLOCK.running = false;
+      CLOCK.lastTs = null;
+      return;
+    }
+    CLOCK.running = true;
+    CLOCK.lastTs = performance.now();
+  }
+
+  function clockSnapshot(){
+    return {
+      baseMs: CLOCK.baseMs,
+      incMs: CLOCK.incMs,
+      started: !!CLOCK.started,
+      active: CLOCK.active,
+      remainMs: {
+        w: Math.max(0, Math.floor(CLOCK.remain.w)),
+        b: Math.max(0, Math.floor(CLOCK.remain.b)),
+      },
+      timeForfeit: timeForfeit ? { ...timeForfeit } : null
+    };
+  }
+
+  function recordClockSnapshotForPly(ply = null, snap = null){
+    const p = (ply == null) ? plyCount() : ply;
+    const s = snap || clockSnapshot();
+    P2P.clockByPly.set(p, s);
+    // cap
+    if(P2P.clockByPly.size > 520){
+      const keys = Array.from(P2P.clockByPly.keys()).sort((a,b)=>a-b);
+      for(let i=0;i<keys.length-520;i++) P2P.clockByPly.delete(keys[i]);
+    }
+  }
+
+  function clockApplySnapshot(snap){
+    if(!snap) return;
+    // Stop locally running time; snapshot is authoritative
+    CLOCK.running = false;
+    CLOCK.lastTs = null;
+
+    if(Number.isFinite(snap.baseMs)) CLOCK.baseMs = snap.baseMs;
+    if(Number.isFinite(snap.incMs)) CLOCK.incMs = snap.incMs;
+    if(snap.remainMs){
+      if(Number.isFinite(snap.remainMs.w)) CLOCK.remain.w = snap.remainMs.w;
+      if(Number.isFinite(snap.remainMs.b)) CLOCK.remain.b = snap.remainMs.b;
+    }
+    CLOCK.started = !!snap.started;
+    CLOCK.active = (snap.active === 'w' || snap.active === 'b') ? snap.active : game.turn();
+    timeForfeit = snap.timeForfeit || null;
+
+    // moveStack can't be reconstructed reliably from remote; keep as-is for local, but in P2P undo we use snapshots
+    if(CLOCK.started && !isHardGameOver()){
+      clockStartFor(game.turn());
+    } else {
+      CLOCK.running = false;
+      CLOCK.lastTs = null;
+    }
+    renderClocks();
+    recordClockSnapshotForPly(plyCount(), snap);
+  }
+
+  function clockReset({startRunning=false}={}){
+    CLOCK.remain.w = CLOCK.baseMs;
+    CLOCK.remain.b = CLOCK.baseMs;
+    CLOCK.moveStack = [];
+    CLOCK.running = false;
+    CLOCK.started = !!startRunning;
+    CLOCK.lastTs = null;
+    CLOCK.active = game.turn();
+    timeForfeit = null;
+    if(CLOCK.started && !isHardGameOver()){
+      clockStartFor(game.turn());
+    }
+    renderClocks();
+    recordClockSnapshotForPly(plyCount());
+  }
+
+  function clockOnMoveMade(moverColor){
+    // Start clocks on FIRST move of the game (no time runs before first move).
+    if(!CLOCK.started){
+      CLOCK.started = true;
+    }
+
+    const spent = clockStopAndGetSpent(); // 0 if clock wasn't running yet
+    CLOCK.moveStack.push({ color: moverColor, spentMs: spent });
+
+    if(CLOCK.incMs > 0) CLOCK.remain[moverColor] += CLOCK.incMs;
+
+    if(isHardGameOver()){
+      CLOCK.running = false;
+      CLOCK.lastTs = null;
+    } else {
+      clockStartFor(game.turn());
+    }
+    renderClocks();
+    recordClockSnapshotForPly(plyCount());
+  }
+
+  function clockOnUndo(){
+    clockStopAndGetSpent();
+    const rec = CLOCK.moveStack.pop();
+    if(rec){
+      CLOCK.remain[rec.color] += rec.spentMs;
+      if(CLOCK.incMs > 0) CLOCK.remain[rec.color] -= CLOCK.incMs;
+    }
+
+    // Undo can "un-start" the game if we went back to ply 0
+    if(CLOCK.moveStack.length === 0){
+      CLOCK.started = false;
+      CLOCK.running = false;
+      CLOCK.lastTs = null;
+      CLOCK.active = game.turn();
+      timeForfeit = null;
+      renderClocks();
+      recordClockSnapshotForPly(plyCount());
+      return;
+    }
+
+    timeForfeit = null;
+    if(isHardGameOver()){
+      CLOCK.running = false;
+      CLOCK.lastTs = null;
+    } else {
+      clockStartFor(game.turn());
+    }
+    renderClocks();
+    recordClockSnapshotForPly(plyCount());
+  }
+
+  function renderClocks(){
+    const w = clockEffectiveRemain('w');
+    const b = clockEffectiveRemain('b');
+
+    // Time forfeit detection (simple online-style)
+    if(!timeForfeit && CLOCK.started && !game.game_over() && (w <= 0 || b <= 0)){
+      const loser = (w <= 0) ? 'w' : 'b';
+      const winner = (loser === 'w') ? 'b' : 'w';
+      timeForfeit = { loser, winner };
+      CLOCK.running = false;
+      CLOCK.lastTs = null;
+      dock(`⏱️ flag: ${sideName(loser)} ran out of time → ${sideName(winner)} wins`);
+      showToast(`Flag: ${sideName(loser)} ran out of time`, 'error');
+      updateStatus();
+
+      // Broadcast flag (state) if in P2P
+      recordClockSnapshotForPly(plyCount());
+      p2pSendState("flag");
+    }
+
+    clockWhiteTimeEl.textContent = fmtClock(w);
+    clockBlackTimeEl.textContent = fmtClock(b);
+
+    const canHighlight = CLOCK.started && !isHardGameOver();
+    clockWhiteWrapEl.classList.toggle('active', canHighlight && game.turn()==='w');
+    clockBlackWrapEl.classList.toggle('active', canHighlight && game.turn()==='b');
+
+    clockWhiteWrapEl.classList.toggle('flag', CLOCK.started && w <= 0);
+    clockBlackWrapEl.classList.toggle('flag', CLOCK.started && b <= 0);
+
+    clockTCEl.textContent = `${Math.floor(CLOCK.baseMs/60000)}+${Math.floor(CLOCK.incMs/1000)}`;
+
+    if(timeForfeit){
+      clockTurnEl.textContent = `Time — ${sideName(timeForfeit.loser)} flagged`;
+    } else if(game.game_over()){
+      clockTurnEl.textContent = game.in_checkmate() ? "Checkmate" : "Game over";
+    } else if(!CLOCK.started){
+      clockTurnEl.textContent = (game.turn()==='w' ? "White to move" : "Black to move") + " — clock starts on first move";
+    } else {
+      clockTurnEl.textContent = game.turn()==='w' ? "White to move" : "Black to move";
+    }
+  }
+
+  setInterval(renderClocks, 200);
+
+  // ---------------------------
+  // Board rendering helpers
+  // ---------------------------
+  function isDarkSquare(square){
+    const fileIndex = square.charCodeAt(0)-97;
+    const rankIndex = parseInt(square[1],10)-1;
+    return (fileIndex + rankIndex) % 2 === 0;
+  }
+  function allSquaresInRenderOrder(){
+    const out=[];
+    for(let row=0; row<8; row++){
+      for(let col=0; col<8; col++){
+        const file = (orientation==='white') ? FILES[col] : FILES[7-col];
+        const rank = (orientation==='white') ? (8-row) : (1+row);
+        out.push(`${file}${rank}`);
+      }
+    }
+    return out;
+  }
+
+  function buildBoard(){
+    boardEl.innerHTML=''; squareMap.clear();
+    const squares = allSquaresInRenderOrder();
+    const bottomRank = (orientation==='white')?'1':'8';
+    const leftFile = (orientation==='white')?'a':'h';
+
+    for(const sq of squares){
+      const file=sq[0], rank=sq[1];
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className=`square ${isDarkSquare(sq)?'dark':'light'}`;
+      btn.dataset.square=sq;
+
+      const pieceSpan=document.createElement('span');
+      pieceSpan.className='piece';
+      btn.appendChild(pieceSpan);
+
+      const fileSpan=document.createElement('span');
+      fileSpan.className='coord file';
+      fileSpan.textContent=(rank===bottomRank)?file:'';
+      btn.appendChild(fileSpan);
+
+      const rankSpan=document.createElement('span');
+      rankSpan.className='coord rank';
+      rankSpan.textContent=(file===leftFile)?rank:'';
+      btn.appendChild(rankSpan);
+
+      btn.addEventListener('pointerdown', onSquarePointerDown);
+      btn.addEventListener('pointermove', onSquarePointerMove);
+      btn.addEventListener('pointerup', onSquarePointerUp);
+      btn.addEventListener('pointercancel', onSquarePointerCancel);
+
+      boardEl.appendChild(btn);
+      squareMap.set(sq, {btn,pieceSpan,fileSpan,rankSpan});
+    }
+  }
+
+  function findKingSquare(color){
+    for(const sq of squareMap.keys()){
+      const p = game.get(sq);
+      if(p && p.type==='k' && p.color===color) return sq;
+    }
+    return null;
+  }
+
+  function renderBoard(){
+    for(const [sq, refs] of squareMap.entries()){
+      const p = game.get(sq);
+      refs.pieceSpan.textContent = p ? PIECE_UNICODE[p.color][p.type] : '';
+      const label = p ? `${sq} ${sideName(p.color)} ${PIECE_NAME[p.type]}` : `${sq} empty`;
+      refs.btn.setAttribute('aria-label', label);
+    }
+
+    for(const refs of squareMap.values()){
+      refs.btn.classList.remove('selected','legal','capture','last-from','last-to','in-check','drag-origin','suggest-from','suggest-to');
+    }
+
+    const hist = game.history({ verbose:true });
+    const last = hist.length ? hist[hist.length-1] : null;
+    if(last){
+      squareMap.get(last.from)?.btn.classList.add('last-from');
+      squareMap.get(last.to)?.btn.classList.add('last-to');
+    }
+
+    if(selectedSquare){
+      squareMap.get(selectedSquare)?.btn.classList.add('selected');
+      for(const m of legalMovesFromSelected){
+        const target = squareMap.get(m.to);
+        if(!target) continue;
+        const flags = String(m.flags||'');
+        const isCap = flags.includes('c') || flags.includes('e');
+        target.btn.classList.add(isCap ? 'capture' : 'legal');
+      }
+    }
+
+    if(game.in_check()){
+      const ksq = findKingSquare(game.turn());
+      if(ksq) squareMap.get(ksq)?.btn.classList.add('in-check');
+    }
+
+    if(dragFromSquare) squareMap.get(dragFromSquare)?.btn.classList.add('drag-origin');
+
+    // Engine assistance suggestion highlight
+    if(ASSIST.suggestion && ASSIST.suggestion.ply === plyCount() && ASSIST.suggestion.fen === game.fen()){
+      squareMap.get(ASSIST.suggestion.from)?.btn.classList.add('suggest-from');
+      squareMap.get(ASSIST.suggestion.to)?.btn.classList.add('suggest-to');
+    }
+  }
+
+  function p2pStatusTag(){
+    if(p2pIsConnected()){
+      const role = P2P.role === 'host' ? 'host' : 'join';
+      const me = P2P.myColor ? sideName(P2P.myColor) : '—';
+      return `p2p ✓ ${role} as ${me}`;
+    }
+    if(P2P.mode === 'host') return "p2p host (not connected)";
+    if(P2P.mode === 'join') return "p2p join (not connected)";
+    return "p2p off";
+  }
+
+  function updateStatus(){
+    const p2pTag = p2pStatusTag();
+
+    if(timeForfeit){
+      statusEl.textContent = `Time forfeit — ${sideName(timeForfeit.loser)} ran out of time. ${sideName(timeForfeit.winner)} wins.` +
+        `  |  ${engineInfo.ready ? `engine ✓ (chainId=${engineInfo.chainId})` : `engine ×`}` + (thinking ? "  |  Blockchain is thinking…" : "") + `  |  ${p2pTag}`;
+      return;
+    }
+
+    const t = game.turn();
+    let msg='';
+    if(game.in_checkmate()){
+      const loser=sideName(t), winner=sideName(t==='w'?'b':'w');
+      msg = `Checkmate — ${loser} is checkmated. ${winner} wins.`;
+    } else if(game.in_stalemate()){
+      msg='Stalemate — Draw.';
+    } else if(game.in_draw && game.in_draw()){
+      msg='Draw.';
+    } else {
+      msg = `${sideName(t)} to move${game.in_check()?' — Check!':''}`;
+    }
+    const eng = engineInfo.ready ? `engine ✓ (chainId=${engineInfo.chainId})` : `engine ×`;
+    statusEl.textContent = msg + `  |  ${eng}` + (thinking ? "  |  Blockchain is thinking…" : "") + `  |  ${p2pTag}`;
+  }
+
+  function updateMoves(){
+    const hist = game.history({ verbose:true });
+    moveBodyEl.innerHTML='';
+    for(let i=0;i<hist.length;i+=2){
+      const moveNo=(i/2)+1;
+      const w=hist[i]?.san||'';
+      const b=hist[i+1]?.san||'';
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${moveNo}.</td><td>${w}</td><td>${b}</td>`;
+      moveBodyEl.appendChild(tr);
+    }
+    movesScrollerEl.scrollTop = movesScrollerEl.scrollHeight;
+  }
+
+  function updateFen(){ fenEl.value = game.fen(); }
+
+  function capturedCounts(){
+    const hist = game.history({ verbose:true });
+    const out = {
+      w: { p:0, n:0, b:0, r:0, q:0 },
+      b: { p:0, n:0, b:0, r:0, q:0 }
+    };
+    for(const mv of hist){
+      const mover = mv.color;
+      let cap = mv.captured || null;
+      const flags = String(mv.flags||'');
+      if(!cap && flags.includes('e')) cap = 'p';
+      if(cap && out[mover] && out[mover][cap] != null) out[mover][cap] += 1;
+    }
+    return out;
+  }
+
+  function formatCapturedRow(counts, pieceColor){
+    const order = ['q','r','b','n','p'];
+    let html = '';
+    let any = false;
+    for(const t of order){
+      const n = counts?.[t] || 0;
+      if(n<=0) continue;
+      any = true;
+      const icon = PIECE_UNICODE[pieceColor][t];
+      html += `<span class="cap-item" aria-label="${n} ${PIECE_NAME[t]}${n>1?'s':''} captured"><span class="cap-piece">${icon}</span><span class="cap-count">×${n}</span></span>`;
+    }
+    if(!any) return `<span class="cap-empty">—</span>`;
+    return html;
+  }
+
+  function renderCaptured(){
+    if(!capsByBlackEl || !capsByWhiteEl) return;
+    const c = capturedCounts();
+    capsByBlackEl.innerHTML = formatCapturedRow(c.b, 'w'); // captured by Black => white pieces
+    capsByWhiteEl.innerHTML = formatCapturedRow(c.w, 'b'); // captured by White => black pieces
+  }
+
+  function renderAll(){ renderBoard(); renderCaptured(); updateStatus(); updateMoves(); updateFen(); renderClocks(); updateP2PUI(); }
+
+  function clearSelection(){ selectedSquare=null; legalMovesFromSelected=[]; }
+
+  function selectSquare(square, opts={}){
+    const piece = game.get(square);
+    if(!piece) return;
+    if(piece.color !== game.turn()){
+      if(!opts.silentToast) showToast(`It's ${sideName(game.turn())}'s turn.`, 'warn');
+      return;
+    }
+    selectedSquare = square;
+    legalMovesFromSelected = game.moves({ square, verbose:true });
+  }
+
+  function legalTargetsSet(){
+    const s = new Set();
+    for(const m of legalMovesFromSelected) s.add(m.to);
+    return s;
+  }
+
+  function getMovesFrom(square){
+    if(selectedSquare===square && legalMovesFromSelected.length) return legalMovesFromSelected;
+    return game.moves({ square, verbose:true });
+  }
+
+  // ---------------------------
+  // Promotion
+  // ---------------------------
+  function openPromotionModal(from,to,color){
+    promotionPending = {from,to,color};
+    promoChoicesEl.innerHTML='';
+    const opts=['q','r','b','n'];
+    for(const p of opts){
+      const btn=document.createElement('button');
+      btn.type='button'; btn.className='promo-btn';
+      btn.textContent = PIECE_UNICODE[color][p];
+      btn.addEventListener('click', ()=>choosePromotion(p));
+      promoChoicesEl.appendChild(btn);
+    }
+    promoModalEl.hidden=false;
+  }
+  function closePromotionModal(){
+    promoModalEl.hidden=true;
+    promotionPending=null;
+    promoChoicesEl.innerHTML='';
+  }
+  function choosePromotion(p){
+    if(!promotionPending) return;
+    const {from,to} = promotionPending;
+
+    const mover = game.turn();
+    const mv = game.move({from,to,promotion:p});
+    closePromotionModal();
+    if(mv===null){ showToast('Illegal promotion.', 'error'); renderAll(); return; }
+    clockOnMoveMade(mover);
+
+    dock(`🧑 move (promo): ${mv.san} | FEN: ${game.fen()}`);
+    clearSelection(); renderAll();
+    afterAnyMove("user-promo");
+  }
+
+  function attemptMove(from,to){
+    if(promotionPending) return false;
+    if(isHardGameOver()){ showToast('Game over.', 'warn'); return false; }
+
+    const candidates = getMovesFrom(from).filter(m=>m.to===to);
+    if(candidates.length===0) return false;
+
+    const needsPromotion = candidates.some(m=>String(m.flags||'').includes('p'));
+    if(needsPromotion){ openPromotionModal(from,to,game.turn()); return false; }
+
+    const mover = game.turn();
+    const mv = game.move({from,to});
+    if(mv===null) return false;
+    clockOnMoveMade(mover);
+
+    dock(`🧑 move: ${mv.san} | FEN: ${game.fen()}`);
+    clearSelection(); renderAll();
+    afterAnyMove("user");
+    return true;
+  }
+
+  function handleSquareTap(square){
+    if(promotionPending) return;
+    if(isHardGameOver()){ showToast('Game over.', 'warn'); return; }
+
+    if(!selectedSquare){
+      const p=game.get(square);
+      if(!p) return;
+      if(p.color!==game.turn()){ showToast(`It's ${sideName(game.turn())}'s turn.`, 'warn'); return; }
+      selectSquare(square); renderBoard(); return;
+    }
+
+    if(square===selectedSquare){ clearSelection(); renderBoard(); return; }
+
+    const p=game.get(square);
+    if(p && p.color===game.turn()){ selectSquare(square); renderBoard(); return; }
+
+    const ok = attemptMove(selectedSquare, square);
+    if(!ok){
+      clearSelection(); renderBoard();
+    }
+  }
+
+  // ---------------------------
+  // Drag
+  // ---------------------------
+  function squareFromPoint(x,y){
+    const el=document.elementFromPoint(x,y);
+    const sqEl = el?.closest?.('.square');
+    return sqEl ? (sqEl.dataset.square||null) : null;
+  }
+  function positionDragEl(dragEl,x,y){
+    dragEl.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;
+  }
+
+  function onSquarePointerDown(e){
+    if(promotionPending) return;
+    const sq=e.currentTarget.dataset.square;
+    const piece=game.get(sq);
+    pointerState = {
+      pointerId:e.pointerId,
+      startX:e.clientX, startY:e.clientY,
+      startSquare:sq,
+      eligible: !!piece && piece.color===game.turn() && !isHardGameOver(),
+      pieceChar: piece ? PIECE_UNICODE[piece.color][piece.type] : '',
+      dragEl:null
+    };
+    try{ e.currentTarget.setPointerCapture(e.pointerId);}catch(_){}
+  }
+  function onSquarePointerMove(e){
+    if(!pointerState || pointerState.pointerId!==e.pointerId) return;
+    if(!pointerState.eligible) return;
+    const dx=e.clientX-pointerState.startX, dy=e.clientY-pointerState.startY;
+    const dist=Math.hypot(dx,dy);
+
+    if(!pointerState.dragEl && dist>6){
+      dragFromSquare=pointerState.startSquare;
+      selectSquare(pointerState.startSquare, {silentToast:true});
+      const dragEl=document.createElement('div');
+      dragEl.className='drag-piece';
+      dragEl.textContent=pointerState.pieceChar;
+      document.body.appendChild(dragEl);
+      pointerState.dragEl=dragEl;
+      renderBoard();
+    }
+    if(pointerState.dragEl){
+      positionDragEl(pointerState.dragEl, e.clientX, e.clientY);
+      e.preventDefault();
+    }
+  }
+  function cleanupPointerState(){
+    if(pointerState?.dragEl) pointerState.dragEl.remove();
+    pointerState=null; dragFromSquare=null;
+  }
+  function onSquarePointerUp(e){
+    if(!pointerState || pointerState.pointerId!==e.pointerId){
+      handleSquareTap(e.currentTarget.dataset.square); return;
+    }
+    const startSquare = pointerState.startSquare;
+    const wasDragging = !!pointerState.dragEl;
+    cleanupPointerState();
+
+    if(wasDragging){
+      const drop = squareFromPoint(e.clientX, e.clientY);
+      if(!drop){
+        clearSelection(); renderAll(); return;
+      }
+      const legalSet = legalTargetsSet();
+      if(!legalSet.has(drop)){
+        clearSelection(); renderAll(); return;
+      }
+      const ok = attemptMove(startSquare, drop);
+      if(!ok){
+        clearSelection(); renderAll();
+      }
+      return;
+    }
+
+    handleSquareTap(startSquare);
+  }
+  function onSquarePointerCancel(e){
+    if(pointerState && pointerState.pointerId===e.pointerId){
+      cleanupPointerState(); renderAll();
+    }
+  }
+
+  // ---------------------------
+  // Move indexing (4672 = 64*73)
+  // ---------------------------
+  function sqToIndex(sq){
+    const f = sq.charCodeAt(0) - 97;
+    const r = parseInt(sq[1],10) - 1;
+    return r*8 + f; // a1=0
+  }
+
+  function piecePlaneIndex(piece){
+    const base = (piece.color === 'w') ? 0 : 6;
+    const map = { p:0, n:1, b:2, r:3, q:4, k:5 };
+    return base + map[piece.type];
+  }
+
+  const DIRS = [
+    [0, 1], [1, 1], [1, 0], [1,-1],
+    [0,-1], [-1,-1], [-1, 0], [-1, 1],
+  ];
+  const KNIGHTS = [
+    [ 1, 2], [ 2, 1], [ 2,-1], [ 1,-2],
+    [-1,-2], [-2,-1], [-2, 1], [-1, 2],
+  ];
+
+  function moveToIndex(board, mv){
+    const from = mv.from, to = mv.to;
+    const ff = from.charCodeAt(0)-97, fr = parseInt(from[1],10);
+    const tf = to.charCodeAt(0)-97, tr = parseInt(to[1],10);
+    const dx = tf-ff, dy = tr-fr;
+
+    const fromIdx = sqToIndex(from);
+    const stm = board.turn();
+
+    if (mv.promotion && mv.promotion !== 'q') {
+      const pg = (mv.promotion === 'n') ? 0 : (mv.promotion === 'b') ? 1 : 2;
+      let dir = 0;
+      if (dx === 0) dir = 0;
+      else {
+        if (stm === 'w') dir = (dx === -1) ? 1 : 2;
+        else dir = (dx ===  1) ? 1 : 2;
+      }
+      const plane = 64 + pg*3 + dir;
+      return fromIdx*73 + plane;
+    }
+
+    for(let d=0; d<DIRS.length; d++){
+      const [vx,vy]=DIRS[d];
+      if (vx===0 && dx!==0) continue;
+      if (vy===0 && dy!==0) continue;
+      if (vx!==0 && vy!==0 && Math.abs(dx)!==Math.abs(dy)) continue;
+
+      if (vx!==0 && Math.sign(dx)!==Math.sign(vx)) continue;
+      if (vy!==0 && Math.sign(dy)!==Math.sign(vy)) continue;
+
+      const dist = Math.max(Math.abs(dx), Math.abs(dy));
+      if(dist>=1 && dist<=7){
+        const plane = d*7 + (dist-1);
+        return fromIdx*73 + plane;
+      }
+    }
+
+    for(let k=0; k<KNIGHTS.length; k++){
+      const [kx,ky]=KNIGHTS[k];
+      if(dx===kx && dy===ky){
+        const plane = 56 + k;
+        return fromIdx*73 + plane;
+      }
+    }
+
+    throw new Error(`Cannot encode move ${from}${to}${mv.promotion||''}`);
+  }
+
+  // ---------------------------
+  // BoardState tuple + masks
+  // ---------------------------
+  function parseFenParts(fen){
+    const parts = String(fen).trim().split(/\s+/);
+    return { turn: parts[1]||'w', castling: parts[2]||'-', ep: parts[3]||'-' };
+  }
+
+  function allSquaresA1H8(){
+    const out=[];
+    for(let r=1;r<=8;r++){
+      for(let f=0;f<8;f++){
+        out.push(`${String.fromCharCode(97+f)}${r}`);
+      }
+    }
+    return out;
+  }
+
+  function boardStateTupleFromGame(g){
+    const fenParts = parseFenParts(g.fen());
+    const bb = Array(12).fill(0n);
+
+    for(const sq of allSquaresA1H8()){
+      const p = g.get(sq);
+      if(!p) continue;
+      const pi = piecePlaneIndex(p);
+      const si = BigInt(sqToIndex(sq));
+      bb[pi] |= (1n << si);
+    }
+
+    let castling = 0;
+    if(fenParts.castling.includes('K')) castling |= 1;
+    if(fenParts.castling.includes('Q')) castling |= 2;
+    if(fenParts.castling.includes('k')) castling |= 4;
+    if(fenParts.castling.includes('q')) castling |= 8;
+
+    let epFile = -1;
+    if(fenParts.ep && fenParts.ep !== '-' && /^[a-h][1-8]$/.test(fenParts.ep)){
+      epFile = fenParts.ep.charCodeAt(0) - 97;
+    }
+
+    const stm = (fenParts.turn === 'w') ? 0 : 1;
+    return [ bb.map(x=>x), stm, castling, epFile ];
+  }
+
+  function makeMaskFromIdx(idxs){
+    const bytes = new Uint8Array(584);
+    for(const idx of idxs){
+      const i = Number(idx);
+      if(i < 0 || i >= 4672) continue;
+      bytes[i >> 3] |= (1 << (i & 7));
+    }
+    let hex = '0x';
+    for(const b of bytes) hex += b.toString(16).padStart(2,'0');
+    return hex;
+  }
+
+  function legalMovesAndMaps(g){
+    const moves = g.moves({ verbose:true });
+    const idxs = [];
+    const idxToMove = new Map();
+    for(const mv of moves){
+      const idx = moveToIndex(g, mv);
+      idxs.push(idx);
+      idxToMove.set(idx, mv);
+    }
+    return { moves, idxs, idxToMove, mask: makeMaskFromIdx(idxs) };
+  }
+
+  function plyCount(){ return game.history().length; }
+
+  // ---------------------------
+  // ABI
+  // ---------------------------
+  const ABI = [
+    {"inputs":[],"name":"weightsReady","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[
+      {"components":[
+        {"internalType":"uint64[12]","name":"bb","type":"uint64[12]"},
+        {"internalType":"uint8","name":"stm","type":"uint8"},
+        {"internalType":"uint8","name":"castling","type":"uint8"},
+        {"internalType":"int8","name":"epFile","type":"int8"}
+      ],"internalType":"struct ChessPolicyNetV1.BoardState","name":"s","type":"tuple"},
+      {"internalType":"bytes","name":"legalMask","type":"bytes"}
+    ],"name":"inferBest","outputs":[
+      {"internalType":"uint16","name":"bestIdx","type":"uint16"},
+      {"internalType":"int32","name":"bestLogit","type":"int32"}
+    ],"stateMutability":"view","type":"function"},
+    {"inputs":[
+      {"components":[
+        {"internalType":"uint64[12]","name":"bb","type":"uint64[12]"},
+        {"internalType":"uint8","name":"stm","type":"uint8"},
+        {"internalType":"uint8","name":"castling","type":"uint8"},
+        {"internalType":"int8","name":"epFile","type":"int8"}
+      ],"internalType":"struct ChessPolicyNetV1.BoardState","name":"s","type":"tuple"},
+      {"internalType":"bytes","name":"legalMask","type":"bytes"},
+      {"internalType":"uint16","name":"k","type":"uint16"}
+    ],"name":"inferTopK","outputs":[
+      {"internalType":"uint16[]","name":"idx","type":"uint16[]"},
+      {"internalType":"int32[]","name":"logits","type":"int32[]"}
+    ],"stateMutability":"view","type":"function"}
+  ];
+
+  // ---------------------------
+  // Params / helpers
+  // ---------------------------
+  function callGasLimit(){
+    const raw = String(callGasEl.value||'').trim();
+    try{
+      if(!raw) return 400000000n;
+      if(!/^\d+$/.test(raw)) throw new Error("gasLimit must be decimal");
+      const v = BigInt(raw);
+      if(v <= 0n) return 400000000n;
+      return v;
+    }catch(e){
+      return 400000000n;
+    }
+  }
+
+  function openingRandMargin(){
+    // Variety is handled ONLY by the opening book on Black's first move.
+    // Engine search afterwards is deterministic (no randMargin).
+    return 0;
+  }
+
+  function uciOf(mv){ return `${mv.from}${mv.to}${mv.promotion||''}`; }
+
+  function capValueOfMoveVerbose(mv){
+    const f = String(mv.flags||'');
+    if(mv.captured){
+      return PIECE_VALUE[mv.captured] || 0;
+    }
+    if(f.includes('e')) return 100; // en passant
+    return 0;
+  }
+
+  function maxCaptureValueFromMoves(moves){
+    let mx = 0;
+    for(const m of moves){
+      const v = capValueOfMoveVerbose(m);
+      if(v > mx) mx = v;
+      if(mx === 900) return 900;
+    }
+    return mx;
+  }
+
+  function tacticalPriority(mv, logit){
+    const capVal = mv.captured ? (PIECE_VALUE[mv.captured] || 0) : (String(mv.flags||'').includes('e') ? 100 : 0);
+    const givesMate = String(mv.san||'').includes('#');
+    const givesCheck = String(mv.san||'').includes('+') || givesMate;
+    const mateBonus = givesMate ? 10_000_000 : 0;
+    return mateBonus + (capVal * CAP_PRI_SCALE) + (givesCheck ? CHECK_PRI_BONUS : 0) + Number(logit||0);
+  }
+
+  function bestTacticalMoveNoLogit(moves){
+    let best = null;
+    let bestScore = -Infinity;
+    for(const m of moves){
+      const givesMate = String(m.san||'').includes('#');
+      const givesCheck = String(m.san||'').includes('+') || givesMate;
+      const capVal = capValueOfMoveVerbose(m);
+      const score = (givesMate ? 10_000_000 : 0) + capVal * 10000 + (givesCheck ? 5000 : 0);
+      if(score > bestScore){
+        bestScore = score;
+        best = m;
+      }
+    }
+    return best;
+  }
+
+  function u32Seed(){
+    const t = Date.now() >>> 0;
+    const r = (Math.random()*0xffffffff)>>>0;
+    return (t ^ r) >>> 0;
+  }
+
+  function chooseRandomAmongNearBest(cands, margin, seedU32, scoreKey="refinedScore"){
+    if(!cands.length) return null;
+    if(margin <= 0) return cands[0];
+    const best = cands[0][scoreKey];
+    const thr = best - margin;
+    const near = cands.filter(c => c[scoreKey] >= thr);
+    if(near.length <= 1) return cands[0];
+    const pick = seedU32 % near.length;
+    return near[pick];
+  }
+
+  function randU32(){
+    try{
+      if(window.crypto && crypto.getRandomValues){
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        return buf[0] >>> 0;
+      }
+    }catch(_){}
+    return (Math.random()*0xffffffff)>>>0;
+  }
+
+  function weightedPick(items){
+    let total = 0;
+    for(const it of items) total += Math.max(0, it.w|0);
+    if(total <= 0) return items[0] || null;
+    let r = randU32() % total;
+    for(const it of items){
+      const w = Math.max(0, it.w|0);
+      if(r < w) return it;
+      r -= w;
+    }
+    return items[0] || null;
+  }
+
+  function findLegalMoveByUci(movesVerbose, uci){
+    for(const mv of movesVerbose){
+      if(uciOf(mv) === uci) return mv;
+    }
+    return null;
+  }
+
+  async function mapPool(arr, concurrency, fn){
+    const res = new Array(arr.length);
+    let i = 0;
+    const workers = Array.from({length: Math.min(concurrency, arr.length)}, async () => {
+      while(true){
+        const idx = i++;
+        if(idx >= arr.length) break;
+        res[idx] = await fn(arr[idx], idx);
+      }
+    });
+    await Promise.all(workers);
+    return res;
+  }
+
+  function modeCallsEstimate(mode, candN, refineN){
+    if(mode === '2ply') return 1 + 2*candN;
+    if(mode === '1plyWide') return 1 + candN;
+    // split refine
+    return 1 + Math.max(0, Math.min(refineN, candN));
+  }
+
+  function updateModeInfo(){
+    const mode = String(searchModeEl.value||'1ply');
+    const candN = Math.max(1, Math.min(32, parseInt(candNEl.value||'6',10) || 6));
+    const refineN = Math.max(0, Math.min(32, parseInt(refineNEl.value||'3',10) || 3));
+    const calls = modeCallsEstimate(mode, candN, refineN);
+
+    const label =
+      mode === '2ply' ? '2‑ply (my→opp→my)' :
+      mode === '1plyWide' ? '1‑ply widened (refine all)' :
+      '1‑ply (split refine)';
+
+   
+
+    // enable refineN only for split refine
+    refineNEl.disabled = (mode !== '1ply');
+  }
+
+  function isCheckOrMateSan(san){
+    const s = String(san||'');
+    return s.includes('+') || s.includes('#');
+  }
+
+  function extraHangPenalty(myCap, oppCapMax, givesCheck){
+    if(givesCheck) return 0;
+    const delta = oppCapMax - myCap;
+    if(delta <= 0) return 0;
+    let k = HANG_PEN_MINOR;
+    if(oppCapMax >= 900) k = HANG_PEN_QUEEN;
+    else if(oppCapMax >= 500) k = HANG_PEN_ROOK;
+    return delta * k;
+  }
+
+  // ---------------------------
+  // Mate-in-1 guarantee + terminal helpers
+  // ---------------------------
+  function materialBalance(g){
+    // returns (white material - black material) in centipawns-ish using PIECE_VALUE
+    let w = 0, b = 0;
+    for(const sq of allSquaresA1H8()){
+      const p = g.get(sq);
+      if(!p) continue;
+      const v = PIECE_VALUE[p.type] || 0;
+      if(p.color === 'w') w += v; else b += v;
+    }
+    return w - b;
+  }
+
+  function drawScoreFromMoverPerspective(child, moverColor){
+    // Draw is "good" if you're losing material, "bad" if you're winning.
+    const diff = materialBalance(child); // w-b
+    const diffFromMover = (moverColor === 'w') ? diff : -diff; // positive => mover ahead
+    return -diffFromMover * MY_CAP_SCALE; // keep scale aligned with material heuristics
+  }
+
+  function findMateIn1Moves(fen, movesVerbose){
+    const mates = [];
+    for(const mv of movesVerbose){
+      const child = new Chess(fen);
+      const ok = child.move({ from: mv.from, to: mv.to, promotion: mv.promotion });
+      if(!ok) continue;
+      if(child.game_over() && child.in_checkmate()){
+        mates.push(mv);
+      }
+    }
+    return mates;
+  }
+
+  function tryForceMateIn1(trigger="manual"){
+    if(promotionPending) return null;
+    if(isHardGameOver()) return null;
+
+    const rootFen = game.fen();
+    const rootMovesVerbose = game.moves({ verbose:true });
+    const mateMoves = findMateIn1Moves(rootFen, rootMovesVerbose);
+    if(!mateMoves.length) return null;
+
+    const chosen = mateMoves[0];
+    dock(`💥 mate‑in‑1 detected → forcing ${uciOf(chosen)} (skipping RPC)`);
+
+    const mover = game.turn();
+    const mvObj = game.move({ from: chosen.from, to: chosen.to, promotion: chosen.promotion });
+    if(!mvObj){
+      dock(`❌ mate‑in‑1 move unexpectedly illegal: ${uciOf(chosen)}`);
+      if(trigger==="manual") showToast(`Illegal mate move? ${uciOf(chosen)}`, 'error');
+      return null;
+    }
+    clockOnMoveMade(mover);
+    dock(`🏁 mate‑in‑1 played: ${mvObj.san} | FEN: ${game.fen()}`);
+    clearSelection(); renderAll();
+    afterAnyMove("engine");
+    if(trigger==="manual") showToast(`Mate in 1: ${mvObj.san}`, 'ok');
+    return uciOf(chosen);
+  }
+
+  function tryPlayOpeningBook(trigger="manual"){
+    // Book is used only in true opening phase:
+    //  - White: first move from initial position (ply 0)
+    //  - Black: first reply after White's first move (ply 1)
+    if(promotionPending) return null;
+    if(isHardGameOver()) return null;
+
+    const fen = String(game.fen());
+    const isInitialStart =
+      fen.startsWith("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+
+    // --- (A) White first move book (only from true initial position) ---
+    if(game.turn() === 'w' && plyCount() === 0 && isInitialStart){
+      const legal = game.moves({ verbose:true });
+      const options = [];
+      for(const it of OPENING_BOOK_WHITE){
+        const mv = findLegalMoveByUci(legal, it.uci);
+        if(mv) options.push({ ...it, mv });
+      }
+      if(!options.length) return null;
+
+      const pick = weightedPick(options);
+      if(!pick || !pick.mv) return null;
+
+      const mover = game.turn();
+      const mvObj = game.move({ from: pick.mv.from, to: pick.mv.to, promotion: pick.mv.promotion });
+      if(!mvObj) return null;
+
+      clockOnMoveMade(mover);
+      dock(`📚 opening book (White): ${mvObj.san}${pick.name ? ` — ${pick.name}` : ''}`);
+      clearSelection(); renderAll();
+      afterAnyMove("engine");
+      if(trigger === "manual") showToast(`Book: ${mvObj.san}`, 'ok');
+      return uciOf(pick.mv);
+    }
+
+    // --- (B) Black first reply book (after White played exactly 1 move) ---
+    if(game.turn() !== 'b') return null;
+    if(plyCount() !== 1) return null;
+
+    const hist = game.history({ verbose:true });
+    if(hist.length !== 1) return null;
+
+    const whiteSan = hist[0].san;
+    const book = OPENING_BOOK_BLACK[whiteSan] || OPENING_BOOK_BLACK["__default"];
+    if(!book || !book.length) return null;
+
+    const legal = game.moves({ verbose:true });
+    const options = [];
+    for(const it of book){
+      const mv = findLegalMoveByUci(legal, it.uci);
+      if(mv) options.push({ ...it, mv });
+    }
+    if(!options.length) return null;
+
+    const pick = weightedPick(options);
+    if(!pick || !pick.mv) return null;
+
+    const mover = game.turn();
+    const mvObj = game.move({ from: pick.mv.from, to: pick.mv.to, promotion: pick.mv.promotion });
+    if(!mvObj) return null;
+
+    clockOnMoveMade(mover);
+    dock(`📚 opening book (Black): 1.${whiteSan} … ${mvObj.san}${pick.name ? ` — ${pick.name}` : ''}`);
+    clearSelection(); renderAll();
+    afterAnyMove("engine");
+    if(trigger === "manual") showToast(`Book: ${mvObj.san}`, 'ok');
+    return uciOf(pick.mv);
+  }
+
+  // Deterministic book suggestion (no random variety) for engine assistance
+  function getOpeningBookSuggestion(){
+    if(promotionPending) return null;
+    if(isHardGameOver()) return null;
+
+    const fen = String(game.fen());
+    const isInitialStart =
+      fen.startsWith("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+
+    function pickMaxWeight(options){
+      let best = null;
+      for(const o of options){
+        if(!best || (o.w|0) > (best.w|0)) best = o;
+      }
+      return best;
+    }
+
+    // White first move suggestion
+    if(game.turn() === 'w' && plyCount() === 0 && isInitialStart){
+      const legal = game.moves({ verbose:true });
+      const options = [];
+      for(const it of OPENING_BOOK_WHITE){
+        const mv = findLegalMoveByUci(legal, it.uci);
+        if(mv) options.push({ ...it, mv });
+      }
+      const pick = pickMaxWeight(options);
+      if(!pick || !pick.mv) return null;
+      return { mv: pick.mv, name: pick.name || "" };
+    }
+
+    // Black first reply suggestion
+    if(game.turn() === 'b' && plyCount() === 1){
+      const hist = game.history({ verbose:true });
+      if(hist.length !== 1) return null;
+      const whiteSan = hist[0].san;
+      const book = OPENING_BOOK_BLACK[whiteSan] || OPENING_BOOK_BLACK["__default"];
+      if(!book || !book.length) return null;
+
+      const legal = game.moves({ verbose:true });
+      const options = [];
+      for(const it of book){
+        const mv = findLegalMoveByUci(legal, it.uci);
+        if(mv) options.push({ ...it, mv });
+      }
+      const pick = pickMaxWeight(options);
+      if(!pick || !pick.mv) return null;
+      return { mv: pick.mv, name: pick.name || "" };
+    }
+
+    return null;
+  }
+
+
+  // ---------------------------
+  // Engine connect / autoplay
+  // ---------------------------
+  async function connectEngine({silent=false}={}){
+    const rpcUrl = String(rpcUrlEl.value||'').trim();
+    const addr = String(contractAddrEl.value||'').trim();
+    if(!rpcUrl || !addr){
+      if(!silent) showToast("Set RPC URL + contract address", "warn");
+      dock("⚠️ Missing RPC URL or contract address");
+      return false;
+    }
+
+    try {
+      provider = new ethers.JsonRpcProvider(rpcUrl);
+      contract = new ethers.Contract(addr, ABI, provider);
+
+      const net = await provider.getNetwork();
+      const block = await provider.getBlockNumber();
+      const ready = await contract.weightsReady({ gasLimit: callGasLimit() });
+
+      engineInfo = { rpcUrl, contract: addr, chainId: Number(net.chainId), block, ready: !!ready };
+      DBG.engineInfo = engineInfo;
+
+      setDockConn(engineInfo.ready ? `connected ✓ chainId=${engineInfo.chainId}` : `connected (weightsReady=false)`);
+      dock(`🔌 connect: chainId=${engineInfo.chainId} block=${engineInfo.block} weightsReady=${ready}`);
+
+      if(!silent){
+        showToast(`Connected ✓ chainId=${engineInfo.chainId} block=${engineInfo.block} weightsReady=${ready}`, ready?'ok':'warn');
+      }
+      renderAll();
+      setTimeout(()=>maybeAutoPlay("connect"), 40);
+      return !!ready;
+    } catch (e) {
+      engineInfo.ready = false;
+      DBG.engineInfo = engineInfo;
+      setDockConn("not connected");
+      setError(e, "connectEngine");
+      if(!silent) showToast(`Connect failed: ${e?.shortMessage||e?.message||e}`, 'error');
+      renderAll();
+      return false;
+    }
+  }
+
+  async function ensureConnected(){
+    if(contract && engineInfo.ready) return true;
+    return await connectEngine({silent:true});
+  }
+
+  function engineShouldMoveNow(){
+    if(promotionPending) return false;
+    if(isHardGameOver()) return false;
+    // In P2P mode, never auto-move (humans play). Use assistance for suggestions instead.
+    if(p2pIsConnected()) return false;
+
+    const mode = String(autoPlayEl.value||'off');
+    const t = game.turn();
+    if(mode === 'off') return false;
+    if(mode === 'both') return true;
+    if(mode === 'white') return t === 'w';
+    if(mode === 'black') return t === 'b';
+    return false;
+  }
+
+  async function maybeAutoPlay(reason="ticker"){
+    if(!engineShouldMoveNow()) return;
+    if(thinking) return;
+    await runEngineMove({trigger:`auto:${reason}`, force:true});
+  }
+
+  async function runEngineMove({trigger="manual", force=false}={}){
+    if(thinking) return null;
+    if(promotionPending) return null;
+
+    if(isHardGameOver()){
+      if(trigger==="manual") showToast("Game over", "warn");
+      return null;
+    }
+
+    if(!force && trigger.startsWith("auto:") && !engineShouldMoveNow()) return null;
+
+    thinking = true;
+    setDockState("thinking…");
+    engineMoveBtn.disabled = true;
+    const prevBtnText = engineMoveBtn.textContent;
+    engineMoveBtn.textContent = "Thinking…";
+    renderAll();
+
+    try{
+      // 0) Pure chess.js overrides (no RPC required)
+      const mateUci = tryForceMateIn1(trigger);
+      if(mateUci) return mateUci;
+
+      const bookUci = tryPlayOpeningBook(trigger);
+      if(bookUci) return bookUci;
+
+      // 1) Onchain path
+      const ok = await ensureConnected();
+      if(!ok){
+        dock("⚠️ engine not ready (weightsReady=false or connect failed)");
+        if(trigger==="manual") showToast("Engine not ready (connect/weights)", "warn");
+        return null;
+      }
+      const uci = await requestOnchainMove(trigger, { applyMove: true });
+      return uci;
+    } finally {
+      thinking = false;
+      setDockState("idle");
+      engineMoveBtn.disabled = false;
+      engineMoveBtn.textContent = prevBtnText;
+      renderAll();
+    }
+  }
+
+  // Engine assistance (suggest only; does not move)
+  async function runEngineSuggest({trigger="assist"}={}){
+    if(thinking) return null;
+    if(promotionPending) return null;
+
+    // In P2P: suggest only for your own turn
+    if(p2pIsConnected() && P2P.myColor && game.turn() !== P2P.myColor){
+      showToast("Not your turn (P2P)", "warn");
+      return null;
+    }
+
+    if(isHardGameOver()){
+      showToast("Game over", "warn");
+      return null;
+    }
+
+    thinking = true;
+    setDockState("thinking…");
+    const prev = engineSuggestBtn.textContent;
+    engineSuggestBtn.disabled = true;
+    engineSuggestBtn.textContent = "Thinking…";
+    renderAll();
+
+    try{
+      const rootFen = game.fen();
+      const rootMovesVerbose = game.moves({ verbose:true });
+
+      // Mate-in-1 suggestion
+      const mateMoves = findMateIn1Moves(rootFen, rootMovesVerbose);
+      if(mateMoves.length){
+        const mv = mateMoves[0];
+        const uci = uciOf(mv);
+        setSuggestion(uci, mv.san || uci);
+        dock(`💡 suggest (mate‑in‑1): ${mv.san} | ${uci}`);
+        showToast(`Suggestion: ${mv.san} (${uci})`, 'ok');
+        renderAll();
+        return uci;
+      }
+
+      // Opening book suggestion (deterministic)
+      const book = getOpeningBookSuggestion();
+      if(book && book.mv){
+        const uci = uciOf(book.mv);
+        setSuggestion(uci, book.mv.san || uci);
+        dock(`💡 suggest (book): ${book.mv.san} | ${uci} ${book.name ? `— ${book.name}` : ''}`);
+        showToast(`Suggestion: ${book.mv.san || uci} (book)`, 'ok');
+        renderAll();
+        return uci;
+      }
+
+      // Onchain suggestion (same logic as engine move, but applyMove=false)
+      const ok = await ensureConnected();
+      if(!ok){
+        dock("⚠️ engine not ready (weightsReady=false or connect failed)");
+        showToast("Engine not ready (connect/weights)", "warn");
+        return null;
+      }
+      const uci = await requestOnchainMove(trigger, { applyMove: false });
+      if(!uci) return null;
+
+      // Compute SAN locally for display
+      let san = null;
+      try{
+        const child = new Chess(rootFen);
+        const from = uci.slice(0,2);
+        const to = uci.slice(2,4);
+        const prom = uci.length > 4 ? uci.slice(4) : undefined;
+        const mvObj = child.move({from,to,promotion: prom});
+        san = mvObj?.san || null;
+      }catch(_){}
+
+      setSuggestion(uci, san || uci);
+      dock(`💡 suggest: ${san || uci} | ${uci}`);
+      showToast(`Suggestion: ${san || uci}`, 'ok');
+      renderAll();
+      return uci;
+    } finally {
+      thinking = false;
+      setDockState("idle");
+      engineSuggestBtn.disabled = false;
+      engineSuggestBtn.textContent = prev;
+      renderAll();
+    }
+  }
+
+  // ---------------------------
+  // Core: onchain search modes
+  // ---------------------------
+  async function inferBestWithMask(stateTuple, maskHex){
+    const gasLimit = callGasLimit();
+    const t0 = performance.now();
+    const res = await contract.inferBest.staticCall(stateTuple, maskHex, { gasLimit });
+    const t1 = performance.now();
+    return { bestIdx: Number(res.bestIdx), bestLogit: Number(res.bestLogit), ms: Math.round(t1-t0) };
+  }
+
+  async function requestOnchainMove(trigger="manual", {applyMove=true}={}){
+    updateModeInfo();
+
+    const gasLimit = callGasLimit();
+    const topK = Math.max(1, Math.min(32, parseInt(topKEl.value||'32',10) || 32));
+    const candN = Math.max(1, Math.min(32, parseInt(candNEl.value||'6',10) || 6));
+    const alpha = Math.max(0, Math.min(255, parseInt(alphaEl.value||'224',10) || 224));
+    const refineN = Math.max(0, Math.min(32, parseInt(refineNEl.value||'3',10) || 3));
+    const randMargin = 0; // deterministic beyond (opening book already handled)
+    const mode = String(searchModeEl.value||'1ply');
+
+    DBG.lastRefines = [];
+    DBG.last2Ply = [];
+
+    const moverColor = game.turn();
+    const rootFen = game.fen();
+
+    // ---- Mate-in-1 guarantee (pure chess.js, no extra RPC calls) ----
+    const rootMovesVerbose = game.moves({ verbose:true });
+    const mateMoves = findMateIn1Moves(rootFen, rootMovesVerbose);
+    if(mateMoves.length){
+      const chosen = mateMoves[0];
+      const uci = uciOf(chosen);
+
+      if(!applyMove){
+        dock(`💡 suggest mate‑in‑1 (skip RPC): ${uci}`);
+        return uci;
+      }
+
+      dock(`💥 mate‑in‑1 detected → forcing ${uci} (skipping inferTopK/inferBest)`);
+      const mover = game.turn();
+      const mvObj = game.move({ from: chosen.from, to: chosen.to, promotion: chosen.promotion });
+      if(!mvObj){
+        dock(`❌ mate‑in‑1 move unexpectedly illegal: ${uci}`);
+        if(trigger==="manual") showToast(`Illegal mate move? ${uci}`, 'error');
+        return null;
+      }
+      clockOnMoveMade(mover);
+      dock(`🏁 mate‑in‑1 played: ${mvObj.san} | FEN: ${game.fen()}`);
+      renderAll();
+      afterAnyMove("engine");
+      if(trigger==="manual") showToast(`Mate in 1: ${mvObj.san}`, 'ok');
+      return uci;
+    }
+
+    // ---- Normal engine path ----
+    const rootState = boardStateTupleFromGame(game);
+    const root = legalMovesAndMaps(game);
+
+    dock(`🤖 ${trigger} | mode=${mode} | turn=${game.turn()} ply=${plyCount()} | inferTopK(k=${topK})…`);
+
+    // 1) topK
+    let top;
+    const t0 = performance.now();
+    try{
+      top = await contract.inferTopK.staticCall(rootState, root.mask, topK, { gasLimit });
+    }catch(e){
+      setError(e, "inferTopK");
+      if(trigger==="manual") showToast(`inferTopK failed: ${e?.shortMessage||e?.message||e}`, 'error');
+      return null;
+    }
+    const t1 = performance.now();
+
+    const policyIdx = top.idx.map(x=>Number(x));
+    const policyLogits = top.logits.map(x=>Number(x));
+
+    DBG.lastTopK = {
+      ok:true, ms: Math.round(t1-t0),
+      req: { fen: game.fen(), topK, gasLimit: gasLimit.toString() },
+      res: { idx: policyIdx, logits: policyLogits }
+    };
+
+    const logitMap = new Map();
+    for(let i=0;i<policyIdx.length;i++) logitMap.set(policyIdx[i], policyLogits[i]);
+
+    // show top 5
+    const topUci = [];
+    for(let i=0;i<Math.min(5, policyIdx.length);i++){
+      const mv = root.idxToMove.get(policyIdx[i]);
+      topUci.push(mv ? `${uciOf(mv)}(${policyLogits[i]})` : `idx=${policyIdx[i]}(${policyLogits[i]})`);
+    }
+    dock(`✅ inferTopK ${DBG.lastTopK.ms}ms | top: ${topUci.join("  ")}`);
+
+    // 2) candidates = policy topK ∪ all captures/checks (so tactics always enter)
+    const candMap = new Map();
+    for(const idx of policyIdx){
+      const mv = root.idxToMove.get(idx);
+      if(mv) candMap.set(idx, { mv, logit: (logitMap.get(idx) ?? 0) });
+    }
+    for(const mv of root.moves){
+      const isCap = !!mv.captured || String(mv.flags||'').includes('e');
+      const isCheck = String(mv.san||'').includes('+') || String(mv.san||'').includes('#');
+      if(!(isCap || isCheck)) continue;
+      const idx = moveToIndex(game, mv);
+      if(!candMap.has(idx)) candMap.set(idx, { mv, logit: 0 });
+    }
+
+    const candList = Array.from(candMap.entries()).map(([idx, obj]) => ({
+      idx,
+      mv: obj.mv,
+      logit: (obj.logit|0),
+      pri: tacticalPriority(obj.mv, obj.logit),
+    }));
+    candList.sort((a,b)=>b.pri - a.pri);
+
+    const pickedCand = candList.slice(0, Math.min(candN, candList.length));
+    dock(`🧠 candidates: union=${candList.length}, picked=${pickedCand.length}, alpha=${alpha}`);
+
+    if(mode === '2ply'){
+      return await search2Ply(trigger, rootFen, moverColor, pickedCand, alpha, randMargin, applyMove);
+    }
+
+    // 1‑ply (split refine or widened)
+    const refineCount = (mode === '1plyWide') ? pickedCand.length : Math.min(refineN, pickedCand.length);
+    return await search1Ply(trigger, rootFen, moverColor, pickedCand, alpha, randMargin, refineCount, applyMove);
+  }
+
+  async function search1Ply(trigger, rootFen, moverColor, pickedCand, alpha, randMargin, refineCount, applyMove=true){
+    // Build fastScore list
+    const scored = [];
+    for(const c of pickedCand){
+      const child = new Chess(rootFen);
+      const played = child.move({ from: c.mv.from, to: c.mv.to, promotion: c.mv.promotion });
+      if(!played) continue;
+
+      const myCap = capValueOfMoveVerbose(played);
+
+      // Terminal child handling (no inferBest with empty masks)
+      if(child.game_over()){
+        if(child.in_checkmate()){
+          scored.push({
+            idx: c.idx, mv: c.mv, logit: c.logit|0,
+            myCap, oppCapMax: 0,
+            fastScore: MATE_SCORE,
+            refinedScore: MATE_SCORE,
+            terminal: "win",
+            oppLogit: 0, refineMs: 0,
+            hangPenalty: 0
+          });
+          dock(`💥 terminal(win) detected in 1‑ply scoring: ${uciOf(c.mv)} → score=${MATE_SCORE}`);
+          continue;
+        } else {
+          const drawScore = drawScoreFromMoverPerspective(child, moverColor);
+          scored.push({
+            idx: c.idx, mv: c.mv, logit: c.logit|0,
+            myCap, oppCapMax: 0,
+            fastScore: drawScore,
+            refinedScore: drawScore,
+            terminal: "draw",
+            oppLogit: 0, refineMs: 0,
+            hangPenalty: 0
+          });
+          dock(`🏁 terminal(draw) detected: ${uciOf(c.mv)} → drawScore=${drawScore}`);
+          continue;
+        }
+      }
+
+      const oppMoves = child.moves({ verbose:true });
+      const oppCapMax = maxCaptureValueFromMoves(oppMoves);
+
+      const givesCheck = isCheckOrMateSan(played.san);
+      const hangPenalty = extraHangPenalty(myCap, oppCapMax, givesCheck);
+
+      const fastScore = (c.logit|0) + (myCap * MY_CAP_SCALE) - (oppCapMax * OPP_CAP_SCALE) - hangPenalty;
+
+      scored.push({
+        idx: c.idx,
+        mv: c.mv,
+        logit: c.logit|0,
+        myCap,
+        oppCapMax,
+        hangPenalty,
+        fastScore,
+        refinedScore: fastScore,
+        terminal: null,
+        oppLogit: 0,
+        refineMs: 0
+      });
+    }
+
+    if(scored.length === 0){
+      dock("❌ no candidates scored");
+      if(trigger==="manual") showToast("No candidates scored (unexpected)", "error");
+      return null;
+    }
+
+    // Sort by fastScore to decide which ones to refine first
+    scored.sort((a,b)=>b.fastScore - a.fastScore);
+
+    const toRefine = scored.slice(0, Math.min(refineCount, scored.length));
+    dock(`🔧 1‑ply refine: mode=${searchModeEl.value} refineCount=${toRefine.length}/${scored.length} (parallel=${MAX_PAR_CALLS})`);
+
+    // Refine (parallel)
+    await mapPool(toRefine, MAX_PAR_CALLS, async (c) => {
+      if(c.terminal){
+        dock(`⏭️ refine skip (terminal=${c.terminal}): ${uciOf(c.mv)}`);
+        return;
+      }
+
+      const child = new Chess(rootFen);
+      child.move({ from: c.mv.from, to: c.mv.to, promotion: c.mv.promotion });
+
+      // If somehow terminal here, skip.
+      if(child.game_over()){
+        c.terminal = child.in_checkmate() ? "win" : "draw";
+        c.refinedScore = c.fastScore;
+        dock(`⏭️ refine skip (became terminal): ${uciOf(c.mv)} terminal=${c.terminal}`);
+        return;
+      }
+
+      const childState = boardStateTupleFromGame(child);
+      const opp = legalMovesAndMaps(child); // full legal for strength
+
+      // Guard: never call inferBest on empty legal set
+      if(!opp.moves.length){
+        c.terminal = "draw";
+        c.refinedScore = drawScoreFromMoverPerspective(child, moverColor);
+        dock(`⏭️ refine skip (opp has 0 legal moves): ${uciOf(c.mv)} → treat as draw`);
+        return;
+      }
+
+      dock(`🔎 refine opp via inferBest: ${uciOf(c.mv)} …`);
+      try{
+        const { bestIdx, bestLogit, ms } = await inferBestWithMask(childState, opp.mask);
+        c.oppLogit = bestLogit|0;
+        c.refineMs = ms;
+
+        const oppPos = (c.oppLogit > 0) ? c.oppLogit : 0;
+        const pen = Math.floor((alpha * oppPos) / 255);
+        c.refinedScore = c.fastScore - pen;
+
+        DBG.lastRefines.push({
+          move: uciOf(c.mv),
+          fastScore: c.fastScore,
+          hangPenalty: c.hangPenalty,
+          oppBestIdx: bestIdx,
+          oppLogit: c.oppLogit,
+          penalty: pen,
+          refinedScore: c.refinedScore,
+          ms
+        });
+
+        dock(`✅ refine ${uciOf(c.mv)} ${ms}ms | oppLog=${c.oppLogit} pen=${pen} => refined=${c.refinedScore}`);
+      }catch(e){
+        setError(e, `inferBest refine ${uciOf(c.mv)}`);
+        c.refinedScore = c.fastScore;
+        c.oppLogit = 0;
+        c.refineMs = 0;
+        dock(`⚠️ refine failed for ${uciOf(c.mv)} → using fastScore only`);
+      }
+    });
+
+    // Pick
+    scored.sort((a,b)=>{
+      if(b.refinedScore !== a.refinedScore) return b.refinedScore - a.refinedScore;
+      return b.fastScore - a.fastScore;
+    });
+
+    const seed = u32Seed();
+    const pick = chooseRandomAmongNearBest(scored, randMargin, seed, "refinedScore");
+    const chosenMove = pick.mv;
+    const uci = uciOf(chosenMove);
+
+    if(!applyMove){
+      dock(`💡 suggested=${uci} | refined=${pick.refinedScore} fast=${pick.fastScore} hangPen=${pick.hangPenalty} myCap=${pick.myCap} oppCapMax=${pick.oppCapMax} oppLog=${pick.oppLogit}`);
+      return uci;
+    }
+
+    // Apply (clock + move)
+    const mover = game.turn();
+    const mvObj = game.move({ from: chosenMove.from, to: chosenMove.to, promotion: chosenMove.promotion });
+    if(!mvObj){
+      dock(`❌ illegal chosen move (shouldn't happen): ${uci}`);
+      if(trigger==="manual") showToast(`Illegal chosen move: ${uci}`, 'error');
+      return null;
+    }
+    clockOnMoveMade(mover);
+
+    dock(`🏁 chosen=${uci} | refined=${pick.refinedScore} fast=${pick.fastScore} hangPen=${pick.hangPenalty} myCap=${pick.myCap} oppCapMax=${pick.oppCapMax} oppLog=${pick.oppLogit}`);
+    renderAll();
+    afterAnyMove("engine");
+    if(trigger==="manual") showToast(`Engine: ${uci}`, 'ok');
+    return uci;
+  }
+
+  async function search2Ply(trigger, rootFen, moverColor, pickedCand, alpha, randMargin, applyMove=true){
+    dock(`🧩 2‑ply: candN=${pickedCand.length} → calls≈${1 + 2*pickedCand.length} (parallel=${MAX_PAR_CALLS})`);
+
+    const cand = [];
+    for(const c of pickedCand){
+      const child = new Chess(rootFen);
+      const played = child.move({ from: c.mv.from, to: c.mv.to, promotion: c.mv.promotion });
+      if(!played) continue;
+
+      const myCap = capValueOfMoveVerbose(played);
+
+      // Terminal after our move: do NOT call inferBest on empty masks
+      if(child.game_over()){
+        if(child.in_checkmate()){
+          cand.push({
+            mv: c.mv,
+            idx: c.idx,
+            myLogit: c.logit|0,
+            myCap,
+            oppCapMax: 0,
+            fastScore: MATE_SCORE,
+            hangPenalty: 0,
+            childFen: child.fen(),
+            outcome: "win",
+            outcomeScore: MATE_SCORE,
+            score2: MATE_SCORE
+          });
+          dock(`💥 2‑ply terminal(win): ${uciOf(c.mv)} score=${MATE_SCORE}`);
+        } else {
+          const drawScore = drawScoreFromMoverPerspective(child, moverColor);
+          cand.push({
+            mv: c.mv,
+            idx: c.idx,
+            myLogit: c.logit|0,
+            myCap,
+            oppCapMax: 0,
+            fastScore: drawScore,
+            hangPenalty: 0,
+            childFen: child.fen(),
+            outcome: "draw",
+            outcomeScore: drawScore,
+            score2: drawScore
+          });
+          dock(`🏁 2‑ply terminal(draw): ${uciOf(c.mv)} drawScore=${drawScore}`);
+        }
+        continue;
+      }
+
+      const oppMaps = legalMovesAndMaps(child);
+      const oppCapMax = maxCaptureValueFromMoves(oppMaps.moves);
+
+      const givesCheck = isCheckOrMateSan(played.san);
+      const hangPenalty = extraHangPenalty(myCap, oppCapMax, givesCheck);
+
+      const fastScore = (c.logit|0) + (myCap * MY_CAP_SCALE) - (oppCapMax * OPP_CAP_SCALE) - hangPenalty;
+
+      cand.push({
+        mv: c.mv,
+        idx: c.idx,
+        myLogit: c.logit|0,
+        myCap,
+        oppCapMax,
+        fastScore,
+        hangPenalty,
+        // child
+        childFen: child.fen(),
+        childState: boardStateTupleFromGame(child),
+        oppMask: oppMaps.mask,
+        oppIdxToMove: oppMaps.idxToMove,
+        oppMovesVerbose: oppMaps.moves,
+        // results
+        oppBestIdx: null,
+        oppBestLogit: 0,
+        oppChosenMove: null,
+        oppMs: 0,
+        // grandchild
+        grandFen: null,
+        grandState: null,
+        my2Mask: null,
+        my2IdxToMove: null,
+        my2BestIdx: null,
+        my2BestLogit: 0,
+        my2Ms: 0,
+        // terminal outcome (set later if line ends)
+        outcome: null,
+        outcomeScore: null,
+        // final
+        score2: fastScore
+      });
+    }
+
+    if(cand.length === 0){
+      dock("❌ 2‑ply: no candidates built");
+      if(trigger==="manual") showToast("2‑ply: No candidates (unexpected)", "error");
+      return null;
+    }
+
+    const active = cand.filter(x => !x.outcome);
+
+    // Phase 1: opponent best reply via inferBest(child)
+    await mapPool(active, MAX_PAR_CALLS, async (c) => {
+      // Guard: if opponent has no legal moves, treat as draw (shouldn't because child.game_over handled)
+      if(!c.oppMovesVerbose || !c.oppMovesVerbose.length){
+        c.outcome = "draw";
+        c.outcomeScore = drawScoreFromMoverPerspective(new Chess(c.childFen), moverColor);
+        c.score2 = c.outcomeScore;
+        dock(`🏁 2‑ply: opp has 0 legal moves after ${uciOf(c.mv)} → treat as draw`);
+        return;
+      }
+
+      dock(`🔎 2‑ply opp: inferBest after ${uciOf(c.mv)} …`);
+      try{
+        const r = await inferBestWithMask(c.childState, c.oppMask);
+        c.oppBestIdx = r.bestIdx;
+        c.oppBestLogit = r.bestLogit|0;
+        c.oppMs = r.ms;
+
+        const nnMove = c.oppIdxToMove.get(c.oppBestIdx) || null;
+
+        // If a big capture exists, assume opponent takes it (line realism)
+        let chosen = nnMove;
+        if(c.oppCapMax >= OPP_CAPTURE_OVERRIDE_AT){
+          const tac = bestTacticalMoveNoLogit(c.oppMovesVerbose);
+          if(tac) chosen = tac;
+        }
+        if(!chosen){
+          chosen = bestTacticalMoveNoLogit(c.oppMovesVerbose) || c.oppMovesVerbose[0] || null;
+        }
+        c.oppChosenMove = chosen;
+
+        dock(`✅ 2‑ply opp: ${uciOf(c.mv)} | oppLog=${c.oppBestLogit} ms=${c.oppMs} | reply=${chosen ? uciOf(chosen) : "(none)"}`);
+
+        // Build grandchild
+        const grand = new Chess(c.childFen);
+        if(chosen){
+          const ok = grand.move({ from: chosen.from, to: chosen.to, promotion: chosen.promotion });
+          if(!ok){
+            c.grandFen = grand.fen();
+          } else {
+            c.grandFen = grand.fen();
+          }
+        } else {
+          c.grandFen = grand.fen();
+        }
+
+        // If line ends here, set outcome and skip my2
+        if(grand.game_over()){
+          if(grand.in_checkmate()){
+            c.outcome = "loss";
+            c.outcomeScore = -MATE_SCORE;
+            c.score2 = c.outcomeScore;
+            dock(`💀 2‑ply terminal(loss): after ${uciOf(c.mv)} … opponent line ends in mate`);
+          } else {
+            c.outcome = "draw";
+            c.outcomeScore = drawScoreFromMoverPerspective(grand, moverColor);
+            c.score2 = c.outcomeScore;
+            dock(`🏁 2‑ply terminal(draw): after ${uciOf(c.mv)} … line ends in draw`);
+          }
+          return;
+        }
+
+        c.grandState = boardStateTupleFromGame(grand);
+        const my2Maps = legalMovesAndMaps(grand);
+        c.my2Mask = my2Maps.mask;
+        c.my2IdxToMove = my2Maps.idxToMove;
+
+        // Guard: if we have no legal moves (shouldn't because not game_over), treat as draw
+        if(!my2Maps.moves.length){
+          c.outcome = "draw";
+          c.outcomeScore = drawScoreFromMoverPerspective(grand, moverColor);
+          c.score2 = c.outcomeScore;
+          dock(`🏁 2‑ply: my2 has 0 legal moves after ${uciOf(c.mv)} → treat as draw`);
+          return;
+        }
+
+      } catch(e){
+        setError(e, `2‑ply inferBest opp after ${uciOf(c.mv)}`);
+
+        // Fallback opponent move: tactical
+        const chosen = bestTacticalMoveNoLogit(c.oppMovesVerbose) || c.oppMovesVerbose[0] || null;
+        c.oppChosenMove = chosen;
+        c.oppBestLogit = 0;
+        c.oppMs = 0;
+
+        const grand = new Chess(c.childFen);
+        if(chosen){
+          grand.move({ from: chosen.from, to: chosen.to, promotion: chosen.promotion });
+        }
+        c.grandFen = grand.fen();
+
+        if(grand.game_over()){
+          if(grand.in_checkmate()){
+            c.outcome = "loss";
+            c.outcomeScore = -MATE_SCORE;
+            c.score2 = c.outcomeScore;
+            dock(`💀 2‑ply terminal(loss): opp fallback leads to mate after ${uciOf(c.mv)}`);
+          } else {
+            c.outcome = "draw";
+            c.outcomeScore = drawScoreFromMoverPerspective(grand, moverColor);
+            c.score2 = c.outcomeScore;
+            dock(`🏁 2‑ply terminal(draw): opp fallback ends draw after ${uciOf(c.mv)}`);
+          }
+          return;
+        }
+
+        c.grandState = boardStateTupleFromGame(grand);
+        const my2Maps = legalMovesAndMaps(grand);
+        c.my2Mask = my2Maps.mask;
+        c.my2IdxToMove = my2Maps.idxToMove;
+
+        dock(`⚠️ 2‑ply opp failed for ${uciOf(c.mv)} → reply=${chosen ? uciOf(chosen) : "(none)"} (tactical fallback)`);
+      }
+    });
+
+    // Phase 2: our best reply via inferBest(grandchild)
+    const active2 = cand.filter(x => !x.outcome);
+    await mapPool(active2, MAX_PAR_CALLS, async (c) => {
+      const grand = new Chess(c.grandFen);
+
+      if(grand.game_over()){
+        if(grand.in_checkmate()){
+          c.outcome = "loss";
+          c.outcomeScore = -MATE_SCORE;
+          c.score2 = c.outcomeScore;
+          dock(`💀 2‑ply terminal(loss): ${uciOf(c.mv)} grand is mate`);
+        } else {
+          c.outcome = "draw";
+          c.outcomeScore = drawScoreFromMoverPerspective(grand, moverColor);
+          c.score2 = c.outcomeScore;
+          dock(`🏁 2‑ply terminal(draw): ${uciOf(c.mv)} grand is draw`);
+        }
+        return;
+      }
+
+      const my2Maps = legalMovesAndMaps(grand);
+      if(!my2Maps.moves.length){
+        c.outcome = "draw";
+        c.outcomeScore = drawScoreFromMoverPerspective(grand, moverColor);
+        c.score2 = c.outcomeScore;
+        dock(`🏁 2‑ply: my2 has 0 legal moves (unexpected) after ${uciOf(c.mv)} → draw`);
+        return;
+      }
+
+      dock(`🔎 2‑ply my2: inferBest after ${uciOf(c.mv)} …`);
+      try{
+        const r = await inferBestWithMask(c.grandState, c.my2Mask);
+        c.my2BestIdx = r.bestIdx;
+        c.my2BestLogit = r.bestLogit|0;
+        c.my2Ms = r.ms;
+
+        const my2Move = c.my2IdxToMove ? (c.my2IdxToMove.get(c.my2BestIdx) || null) : null;
+        dock(`✅ 2‑ply my2: ${uciOf(c.mv)} | my2Log=${c.my2BestLogit} ms=${c.my2Ms} | my2=${my2Move ? uciOf(my2Move) : "(idx)"} `);
+      }catch(e){
+        setError(e, `2‑ply inferBest my2 after ${uciOf(c.mv)}`);
+        c.my2BestLogit = 0;
+        c.my2Ms = 0;
+        dock(`⚠️ 2‑ply my2 failed for ${uciOf(c.mv)} → my2Log=0`);
+      }
+    });
+
+    // Final scoring
+    for(const c of cand){
+      if(c.outcomeScore != null){
+        DBG.last2Ply.push({
+          move: uciOf(c.mv),
+          outcome: c.outcome,
+          score2: c.score2,
+          fastScore: c.fastScore,
+          hangPenalty: c.hangPenalty || 0,
+          oppCapMax: c.oppCapMax,
+          oppLogit: c.oppBestLogit || 0,
+          my2Logit: c.my2BestLogit || 0,
+          oppReply: c.oppChosenMove ? uciOf(c.oppChosenMove) : null,
+          oppMs: c.oppMs || 0,
+          my2Ms: c.my2Ms || 0
+        });
+        continue;
+      }
+
+      const oppPos = (c.oppBestLogit > 0) ? c.oppBestLogit : 0;
+      const pen = Math.floor((alpha * oppPos) / 255);
+
+      const my2Pos = (c.my2BestLogit > 0) ? c.my2BestLogit : 0;
+      const bonus = Math.floor(my2Pos * MY2_BONUS_SCALE);
+
+      c.score2 = c.fastScore - pen + bonus;
+
+      DBG.last2Ply.push({
+        move: uciOf(c.mv),
+        outcome: null,
+        fastScore: c.fastScore,
+        hangPenalty: c.hangPenalty || 0,
+        oppCapMax: c.oppCapMax,
+        oppLogit: c.oppBestLogit,
+        oppPenalty: pen,
+        my2Logit: c.my2BestLogit,
+        my2Bonus: bonus,
+        score2: c.score2,
+        oppReply: c.oppChosenMove ? uciOf(c.oppChosenMove) : null,
+        oppMs: c.oppMs,
+        my2Ms: c.my2Ms
+      });
+    }
+
+    cand.sort((a,b)=>{
+      if(b.score2 !== a.score2) return b.score2 - a.score2;
+      return (b.fastScore||0) - (a.fastScore||0);
+    });
+
+    const seed = u32Seed();
+    const pick = chooseRandomAmongNearBest(cand, randMargin, seed, "score2");
+    const chosenMove = pick.mv;
+    const uci = uciOf(chosenMove);
+
+    if(!applyMove){
+      dock(`💡 2‑ply suggested=${uci} | score2=${pick.score2} outcome=${pick.outcome||"play"} fast=${pick.fastScore||0} hangPen=${pick.hangPenalty||0}`);
+      return uci;
+    }
+
+    const mover = game.turn();
+    const mvObj = game.move({ from: chosenMove.from, to: chosenMove.to, promotion: chosenMove.promotion });
+    if(!mvObj){
+      dock(`❌ 2‑ply illegal chosen move (shouldn't happen): ${uci}`);
+      if(trigger==="manual") showToast(`Illegal chosen move: ${uci}`, 'error');
+      return null;
+    }
+    clockOnMoveMade(mover);
+
+    dock(`🏁 2‑ply chosen=${uci} | score2=${pick.score2} outcome=${pick.outcome||"play"} fast=${pick.fastScore||0} hangPen=${pick.hangPenalty||0}`);
+    renderAll();
+    afterAnyMove("engine");
+    if(trigger==="manual") showToast(`Engine: ${uci}`, 'ok');
+    return uci;
+  }
+
+  // ---------------------------
+  // P2P helpers
+  // ---------------------------
+  function historyUciList(){
+    const hist = game.history({ verbose:true });
+    return hist.map(m => uciOf(m));
+  }
+
+  function p2pMakeState(reason="state"){
+    return {
+      v: 1,
+      type: "state",
+      reason,
+      startFen: START_FEN,
+      moves: historyUciList(),
+      ply: plyCount(),
+      fen: game.fen(),
+      clock: clockSnapshot(),
+      hostColor: P2P.hostColor,
+      ts: Date.now()
+    };
+  }
+
+  function p2pSend(obj){
+    if(!p2pCanSend()) return false;
+    try{
+      P2P.dc.send(JSON.stringify(obj));
+      return true;
+    }catch(e){
+      setError(e, "p2pSend");
+      return false;
+    }
+  }
+
+  function p2pSendState(reason="state"){
+    if(!p2pCanSend()) return false;
+    // avoid spamming duplicates for same ply unless important
+    const p = plyCount();
+    if(reason === "move" && P2P.lastSentPly === p) return true;
+    const ok = p2pSend(p2pMakeState(reason));
+    if(ok && reason === "move") P2P.lastSentPly = p;
+    return ok;
+  }
+
+  function p2pDecodeSignal(text){
+    const s = String(text||'').trim();
+    if(!s) return null;
+    try{
+      const json = atob(s);
+      return JSON.parse(json);
+    }catch(_){
+      try{
+        // allow raw JSON
+        return JSON.parse(s);
+      }catch(e){
+        return null;
+      }
+    }
+  }
+
+  function p2pEncodeSignal(obj){
+    return btoa(JSON.stringify(obj));
+  }
+
+  function p2pWaitIceComplete(pc){
+    if(!pc) return Promise.resolve();
+    if(pc.iceGatheringState === 'complete') return Promise.resolve();
+    return new Promise(resolve=>{
+      const onChange = () => {
+        if(pc.iceGatheringState === 'complete'){
+          pc.removeEventListener('icegatheringstatechange', onChange);
+          resolve();
+        }
+      };
+      pc.addEventListener('icegatheringstatechange', onChange);
+      // Safety timeout (still works with partial candidates)
+      setTimeout(()=>resolve(), 4000);
+    });
+  }
+
+  function p2pClose(reason="closed"){
+    try{ if(P2P.dc) P2P.dc.close(); }catch(_){}
+    try{ if(P2P.pc) P2P.pc.close(); }catch(_){}
+    P2P.pc = null;
+    P2P.dc = null;
+    P2P.connected = false;
+    P2P.role = 'local';
+    P2P.myColor = null;
+    P2P.peerColor = null;
+    P2P.applyingRemote = false;
+    P2P.lastSentPly = -1;
+
+    // restore autoplay selector if we locked it
+    if(autoPlayEl){
+      if(P2P.savedAutoPlay != null){
+        autoPlayEl.value = P2P.savedAutoPlay;
+        P2P.savedAutoPlay = null;
+      }
+      autoPlayEl.disabled = false;
+    }
+
+    dock(`🔌 p2p: ${reason}`);
+    updateP2PUI();
+    renderAll();
+  }
+
+  function p2pSetupDataChannel(dc){
+    P2P.dc = dc;
+    dc.onopen = () => {
+      P2P.connected = true;
+
+      // Lock autoplay off during P2P
+      if(autoPlayEl){
+        if(P2P.savedAutoPlay == null) P2P.savedAutoPlay = autoPlayEl.value;
+        autoPlayEl.value = "off";
+        autoPlayEl.disabled = true;
+      }
+
+      // Default orientation to your color (can still Flip manually)
+      if(P2P.myColor){
+        orientation = (P2P.myColor === 'w') ? 'white' : 'black';
+        buildBoard();
+      }
+
+      dock(`🤝 p2p connected | role=${P2P.role} my=${P2P.myColor} hostColor=${P2P.hostColor}`);
+      showToast(`P2P connected (${P2P.role} as ${sideName(P2P.myColor)})`, 'ok');
+
+      // Host sends sync state immediately
+      if(P2P.role === 'host'){
+        p2pSend(p2pMakeState("sync"));
+      } else {
+        // joiner asks for sync (in case)
+        p2pSend({v:1,type:"req-sync"});
+      }
+
+      updateP2PUI();
+      renderAll();
+    };
+
+    dc.onclose = () => {
+      showToast("P2P disconnected", "warn");
+      p2pClose("channel closed");
+    };
+    dc.onerror = (e) => {
+      setError(e, "p2p datachannel error");
+    };
+    dc.onmessage = (ev) => {
+      const data = ev.data;
+      let msg = null;
+      try{ msg = JSON.parse(String(data)); }catch(_){ msg = null; }
+      if(!msg || typeof msg !== 'object') return;
+
+      if(msg.type === "req-sync"){
+        if(P2P.role === 'host'){
+          p2pSend(p2pMakeState("sync"));
+        }
+        return;
+      }
+
+      if(msg.type === "state"){
+        p2pApplyRemoteState(msg);
+        return;
+      }
+
+      if(msg.type === "hello"){
+        dock(`👋 p2p hello: ${safeStringify(msg)}`);
+        return;
+      }
+    };
+  }
+
+  function p2pCreatePeerConnection(){
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    pc.onconnectionstatechange = () => {
+      dock(`p2p connState=${pc.connectionState}`);
+      if(pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed'){
+        if(p2pIsConnected()){
+          // data channel will also close; but handle just in case
+          showToast("P2P connection ended", "warn");
+        }
+      }
+      updateP2PUI();
+    };
+    pc.oniceconnectionstatechange = () => {
+      dock(`p2p iceState=${pc.iceConnectionState}`);
+      updateP2PUI();
+    };
+    return pc;
+  }
+
+  async function p2pHostCreateOffer(){
+    p2pClose("restart host");
+    P2P.mode = "host";
+    P2P.role = "host";
+
+    P2P.hostColor = (String(hostColorEl?.value || 'w') === 'b') ? 'b' : 'w';
+    P2P.myColor = P2P.hostColor;
+    P2P.peerColor = (P2P.hostColor === 'w') ? 'b' : 'w';
+
+    const pc = p2pCreatePeerConnection();
+    P2P.pc = pc;
+
+    const dc = pc.createDataChannel("chess", { ordered: true });
+    p2pSetupDataChannel(dc);
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await p2pWaitIceComplete(pc);
+
+    const pkg = { v:1, desc: pc.localDescription, hostColor: P2P.hostColor };
+    const code = p2pEncodeSignal(pkg);
+    p2pHostOfferEl.value = code;
+
+    dock("📤 p2p host offer created");
+    showToast("Offer created — send to joiner", "ok");
+    updateP2PUI();
+  }
+
+  async function p2pHostUseAnswer(){
+    const pc = P2P.pc;
+    if(!pc){
+      showToast("Create an offer first", "warn");
+      return;
+    }
+    const pkg = p2pDecodeSignal(p2pHostAnswerEl.value);
+    if(!pkg || !pkg.desc){
+      showToast("Invalid answer code", "error");
+      return;
+    }
+    try{
+      await pc.setRemoteDescription(pkg.desc);
+      dock("📥 p2p host setRemoteDescription(answer)");
+      showToast("Answer applied — connecting…", "ok");
+    }catch(e){
+      setError(e, "p2pHostUseAnswer");
+      showToast(`Use answer failed: ${e?.message||e}`, "error");
+    }
+  }
+
+  async function p2pJoinCreateAnswer(){
+    p2pClose("restart join");
+    P2P.mode = "join";
+    P2P.role = "join";
+
+    const offerPkg = p2pDecodeSignal(p2pJoinOfferEl.value);
+    if(!offerPkg || !offerPkg.desc){
+      showToast("Invalid offer code", "error");
+      return;
+    }
+
+    P2P.hostColor = (offerPkg.hostColor === 'b') ? 'b' : 'w';
+    P2P.peerColor = P2P.hostColor;
+    P2P.myColor = (P2P.hostColor === 'w') ? 'b' : 'w';
+
+    const pc = p2pCreatePeerConnection();
+    P2P.pc = pc;
+
+    pc.ondatachannel = (ev) => {
+      p2pSetupDataChannel(ev.channel);
+    };
+
+    try{
+      await pc.setRemoteDescription(offerPkg.desc);
+      const ans = await pc.createAnswer();
+      await pc.setLocalDescription(ans);
+      await p2pWaitIceComplete(pc);
+
+      const pkg = { v:1, desc: pc.localDescription };
+      const code = p2pEncodeSignal(pkg);
+      p2pJoinAnswerEl.value = code;
+
+      dock("📤 p2p join answer created");
+      showToast("Answer created — send to host", "ok");
+      updateP2PUI();
+    }catch(e){
+      setError(e, "p2pJoinCreateAnswer");
+      showToast(`Create answer failed: ${e?.message||e}`, "error");
+    }
+  }
+
+  function p2pApplyRemoteState(msg){
+    // msg: {startFen, moves[], clock, ply...}
+    P2P.applyingRemote = true;
+    try{
+      closePromotionModal();
+      clearSelection();
+      clearSuggestion();
+
+      if(msg.hostColor === 'w' || msg.hostColor === 'b'){
+        P2P.hostColor = msg.hostColor;
+        if(P2P.role === 'host'){
+          P2P.myColor = msg.hostColor;
+          P2P.peerColor = (msg.hostColor === 'w') ? 'b' : 'w';
+        } else if(P2P.role === 'join'){
+          P2P.peerColor = msg.hostColor;
+          P2P.myColor = (msg.hostColor === 'w') ? 'b' : 'w';
+        }
+      }
+
+      const startFen = (typeof msg.startFen === 'string' && msg.startFen.trim()) ? msg.startFen : DEFAULT_START_FEN;
+      const moves = Array.isArray(msg.moves) ? msg.moves : [];
+
+      START_FEN = startFen;
+
+      game.reset();
+      if(startFen !== DEFAULT_START_FEN){
+        const ok = game.load(startFen);
+        if(!ok){
+          dock("⚠️ p2p: invalid startFen, falling back to default");
+          game.reset();
+          START_FEN = DEFAULT_START_FEN;
+        }
+      }
+
+      for(const uci of moves){
+        if(typeof uci !== 'string' || uci.length < 4) continue;
+        const from = uci.slice(0,2);
+        const to = uci.slice(2,4);
+        const prom = uci.length > 4 ? uci.slice(4) : undefined;
+        const mv = game.move({from,to,promotion: prom});
+        if(!mv){
+          dock(`❌ p2p: failed to apply move ${uci} during sync`);
+          showToast(`P2P sync error on move ${uci}`, "error");
+          break;
+        }
+      }
+
+      if(msg.clock) clockApplySnapshot(msg.clock);
+      else recordClockSnapshotForPly(plyCount());
+
+      dock(`📡 p2p state applied (${msg.reason||'state'}) ply=${plyCount()} turn=${game.turn()}`);
+      renderAll();
+
+      // In P2P, auto-suggest may trigger if enabled and now it's your turn.
+      setTimeout(()=>maybeAutoSuggest("p2p-remote"), 120);
+
+    } finally {
+      P2P.applyingRemote = false;
+    }
+  }
+
+  function updateP2PUI(){
+    const mode = String(p2pModeEl?.value || 'off');
+    P2P.mode = mode;
+
+    const isHost = mode === 'host';
+    const isJoin = mode === 'join';
+
+    if(hostColorFieldEl) hostColorFieldEl.hidden = !isHost;
+    if(p2pHostSectionEl) p2pHostSectionEl.hidden = !isHost;
+    if(p2pJoinSectionEl) p2pJoinSectionEl.hidden = !isJoin;
+
+    const conn = p2pIsConnected();
+    const role = P2P.role;
+
+    if(p2pStatusEl){
+      if(conn){
+        p2pStatusEl.textContent = `Connected ✓ — You are ${sideName(P2P.myColor)} (${role}).`;
+      } else if(isHost){
+        p2pStatusEl.textContent = `Host: create an offer, send it to the joiner, then paste their answer and click “Use answer”.`;
+      } else if(isJoin){
+        p2pStatusEl.textContent = `Join: paste the host offer, click “Create answer”, then send the answer back to the host.`;
+      } else {
+        p2pStatusEl.textContent = `Off (local).`;
+      }
+    }
+
+    // Disable setup actions for joiner (host controls setup)
+    const joiner = conn && P2P.role === 'join';
+    if(newGameBtn) newGameBtn.disabled = joiner;
+    if(undoBtn) undoBtn.disabled = joiner;
+    if(loadFenBtn) loadFenBtn.disabled = joiner;
+    if(pastePgnBtn) pastePgnBtn.disabled = joiner;
+
+    // In P2P, engine move / suggest only on your turn
+    if(p2pIsConnected() && P2P.myColor){
+      const myTurn = game.turn() === P2P.myColor;
+      if(engineMoveBtn && !thinking) engineMoveBtn.disabled = !myTurn;
+      if(engineSuggestBtn && !thinking) engineSuggestBtn.disabled = !myTurn;
+    } else {
+      // restore normal enable state unless thinking
+      if(engineMoveBtn && !thinking) engineMoveBtn.disabled = false;
+      if(engineSuggestBtn && !thinking) engineSuggestBtn.disabled = false;
+    }
+  }
+
+  // ---------------------------
+  // Engine assistance auto-suggest
+  // ---------------------------
+  function myPlayableColors(){
+    // Which colors are controlled by this UI "human player"
+    if(p2pIsConnected() && P2P.myColor) return new Set([P2P.myColor]);
+
+    const mode = String(autoPlayEl?.value || 'off');
+    if(mode === 'both') return new Set();           // engine plays both
+    if(mode === 'white') return new Set(['b']);     // engine plays White
+    if(mode === 'black') return new Set(['w']);     // engine plays Black
+    return new Set(['w','b']);                      // user plays both
+  }
+
+  async function maybeAutoSuggest(reason=""){
+    const mode = String(assistModeEl?.value || 'off');
+    if(mode === 'off') return;
+    if(thinking) return;
+    if(promotionPending) return;
+    if(isHardGameOver()) return;
+
+    const playable = myPlayableColors();
+    const t = game.turn();
+    if(!playable.has(t)) return;
+
+    // If we already have a suggestion for this exact position, don't repeat
+    if(ASSIST.suggestion && ASSIST.suggestion.ply === plyCount() && ASSIST.suggestion.fen === game.fen()){
+      return;
+    }
+    if(ASSIST.pending) return;
+
+    ASSIST.pending = true;
+    try{
+      await runEngineSuggest({trigger:`assist:${reason}`});
+      if(String(assistModeEl?.value||'off') === 'once'){
+        assistModeEl.value = 'off';
+      }
+    } finally {
+      ASSIST.pending = false;
+    }
+  }
+
+  // ---------------------------
+  // Auto-play scheduling
+  // ---------------------------
+  function afterAnyMove(reason){
+    // Always clear previous suggestion after the position changes
+    clearSuggestion();
+
+    // Broadcast state to peer after local actions (not when applying remote)
+    // "move" is the most common; other reasons (new-game, undo, fen-load, pgn-load) also sync.
+    if(p2pIsConnected() && !P2P.applyingRemote){
+      // If this afterAnyMove was called due to a local action, send state.
+      // We consider all reasons as sync-worthy.
+      p2pSendState(reason === "user" || reason === "engine" || reason.startsWith("auto:") ? "move" : reason);
+    }
+
+    setTimeout(()=>maybeAutoPlay(reason), 60);
+    setTimeout(()=>maybeAutoSuggest(reason), 120);
+  }
+  setInterval(()=>{ maybeAutoPlay("ticker"); maybeAutoSuggest("ticker"); }, 700);
+
+  // ---------------------------
+  // PGN modal
+  // ---------------------------
+  function openPgnModal(){
+    pgnTextEl.value = game.pgn() || "";
+    pgnModalEl.hidden = false;
+  }
+  function closePgnModal(){ pgnModalEl.hidden = true; }
+
+  function extractFenTagFromPgn(pgnText){
+    const m = String(pgnText||'').match(/\[FEN\s+"([^"]+)"\]/i);
+    return m ? m[1] : null;
+  }
+
+  pgnLoadBtn.addEventListener('click', ()=>{
+    // In P2P, joiner cannot load PGN (host controls setup)
+    if(p2pIsConnected() && P2P.role === 'join'){
+      showToast("P2P: only host can load PGN", "warn");
+      return;
+    }
+
+    const text = String(pgnTextEl.value||'').trim();
+    if(!text){ closePgnModal(); return; }
+    const ok = game.load_pgn(text);
+    if(!ok){ showToast("Invalid PGN", "error"); return; }
+    closePgnModal();
+    clearSelection(); closePromotionModal(); clearSuggestion();
+    dock(`📥 PGN loaded | ply=${plyCount()} | FEN: ${game.fen()}`);
+    renderAll();
+    showToast("PGN loaded", "ok");
+
+    // Track start position for P2P sync
+    START_FEN = extractFenTagFromPgn(text) || DEFAULT_START_FEN;
+
+    // Reset clocks (start running immediately if the PGN already has moves)
+    clockReset({ startRunning: plyCount() > 0 });
+
+    afterAnyMove("pgn-load");
+  });
+  pgnCancelBtn.addEventListener('click', ()=>closePgnModal());
+
+  // ---------------------------
+  // UI actions
+  // ---------------------------
+  newGameBtn.addEventListener('click', ()=>{
+    if(p2pIsConnected() && P2P.role === 'join'){
+      showToast("P2P: only host can start a new game", "warn");
+      return;
+    }
+
+    if(!confirm("Start a new game?")) return;
+    game.reset(); clearSelection(); closePromotionModal(); clearSuggestion(); renderAll();
+    dock("🆕 new game");
+    showToast("New game", "ok");
+
+    START_FEN = DEFAULT_START_FEN;
+
+    // FIDE 90+30, start only when first move is made
+    clockReset({ startRunning: false });
+
+    afterAnyMove("new-game");
+  });
+
+  undoBtn.addEventListener('click', ()=>{
+    if(p2pIsConnected() && P2P.role === 'join'){
+      showToast("P2P: only host can undo", "warn");
+      return;
+    }
+
+    if(promotionPending) closePromotionModal();
+    const u = game.undo();
+    if(!u){ showToast("Nothing to undo", "warn"); return; }
+    clearSelection(); clearSuggestion(); renderAll();
+    dock(`↩️ undo | FEN: ${game.fen()}`);
+    showToast("Undid move", "ok");
+
+    if(p2pIsConnected()){
+      // In P2P, restore clocks from snapshot map (authoritative from last synced state)
+      const p = plyCount();
+      const snap = P2P.clockByPly.get(p) || null;
+      if(snap){
+        clockApplySnapshot(snap);
+      } else {
+        // fallback
+        clockReset({ startRunning: p > 0 });
+      }
+    } else {
+      clockOnUndo();
+    }
+
+    afterAnyMove("undo");
+  });
+
+  flipBtn.addEventListener('click', ()=>{
+    orientation = (orientation==='white') ? 'black' : 'white';
+    clearSelection(); buildBoard(); renderAll();
+    dock(`🔄 flip board (${orientation})`);
+  });
+
+  copyFenBtn.addEventListener('click', ()=>copyText(game.fen()));
+  copyPgnBtn.addEventListener('click', ()=>copyText(game.pgn()));
+  pastePgnBtn.addEventListener('click', ()=>{
+    if(p2pIsConnected() && P2P.role === 'join'){
+      showToast("P2P: only host can load PGN", "warn");
+      return;
+    }
+    openPgnModal();
+  });
+
+  downloadPgnBtn.addEventListener('click', ()=>{
+    const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+    downloadText(`game-${stamp}.pgn`, game.pgn());
+    showToast("Downloaded PGN", "ok");
+  });
+
+  loadFenBtn.addEventListener('click', ()=>{
+    if(p2pIsConnected() && P2P.role === 'join'){
+      showToast("P2P: only host can load FEN", "warn");
+      return;
+    }
+
+    const fen = prompt("Paste FEN:", game.fen());
+    if(fen===null) return;
+    const ok = game.load(String(fen).trim());
+    if(!ok){ showToast("Invalid FEN", "error"); return; }
+    clearSelection(); closePromotionModal(); clearSuggestion(); renderAll();
+    dock(`📥 FEN loaded | ply=${plyCount()} | FEN: ${game.fen()}`);
+    showToast("Loaded FEN", "ok");
+
+    // Track start position for P2P sync
+    START_FEN = game.fen();
+
+    // If this is not the initial start position, we start running immediately.
+    const isInitial =
+      String(game.fen()).startsWith("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -");
+    clockReset({ startRunning: !isInitial });
+
+    afterAnyMove("fen-load");
+  });
+
+  promoCancelBtn.addEventListener('click', ()=>{
+    closePromotionModal(); clearSelection(); renderAll();
+    dock("✖️ promotion cancelled");
+  });
+
+  connectBtn.addEventListener('click', ()=>connectEngine({silent:false}));
+
+  engineMoveBtn.addEventListener('click', ()=>{
+    if(p2pIsConnected() && P2P.myColor && game.turn() !== P2P.myColor){
+      showToast("Not your turn (P2P)", "warn");
+      return;
+    }
+    runEngineMove({trigger:"manual", force:true});
+  });
+
+  engineSuggestBtn.addEventListener('click', ()=>{
+    if(p2pIsConnected() && P2P.myColor && game.turn() !== P2P.myColor){
+      showToast("Not your turn (P2P)", "warn");
+      return;
+    }
+    runEngineSuggest({trigger:"manual-suggest"});
+  });
+
+  assistModeEl.addEventListener('change', ()=>{
+    dock(`⚙️ engine assistance = ${assistModeEl.value}`);
+    setTimeout(()=>maybeAutoSuggest("assist-change"), 60);
+  });
+
+  autoPlayEl.addEventListener('change', ()=>{
+    dock(`⚙️ auto-play = ${autoPlayEl.value}`);
+    setTimeout(()=>maybeAutoPlay("autoplay-change"), 80);
+  });
+
+  searchModeEl.addEventListener('change', ()=>{
+    updateModeInfo();
+    dock(`⚙️ searchMode = ${searchModeEl.value}`);
+  });
+
+  // Update mode info if candN/refineN changes
+  candNEl.addEventListener('input', updateModeInfo);
+  refineNEl.addEventListener('input', updateModeInfo);
+
+  copyDebugBtn.addEventListener('click', async ()=>{
+    const dbg = {
+      rpcUrl: String(rpcUrlEl.value||'').trim(),
+      contract: String(contractAddrEl.value||'').trim(),
+      engineInfo,
+      fen: game.fen(),
+      ply: plyCount(),
+      startFen: START_FEN,
+      params: {
+        gasLimit: callGasLimit().toString(),
+        topK: parseInt(topKEl.value||'32',10),
+        candN: parseInt(candNEl.value||'6',10),
+        alpha: parseInt(alphaEl.value||'224',10),
+        refineN: parseInt(refineNEl.value||'3',10),
+        autoPlay: autoPlayEl.value,
+        searchMode: searchModeEl.value,
+        assistMode: assistModeEl.value
+      },
+      p2p: {
+        mode: P2P.mode,
+        role: P2P.role,
+        connected: p2pIsConnected(),
+        hostColor: P2P.hostColor,
+        myColor: P2P.myColor,
+        peerColor: P2P.peerColor,
+        pcState: P2P.pc ? P2P.pc.connectionState : null,
+        iceState: P2P.pc ? P2P.pc.iceConnectionState : null
+      },
+      clocks: {
+        baseMin: CLOCK.baseMs/60000,
+        incSec: CLOCK.incMs/1000,
+        started: CLOCK.started,
+        running: CLOCK.running,
+        active: CLOCK.active,
+        timeForfeit,
+        remainMs: {
+          w: Math.floor(clockEffectiveRemain('w')),
+          b: Math.floor(clockEffectiveRemain('b'))
+        },
+        turn: game.turn()
+      },
+      captured: capturedCounts(),
+      lastTopK: DBG.lastTopK,
+      lastRefines: DBG.lastRefines,
+      last2Ply: DBG.last2Ply,
+      lastError: DBG.lastError,
+      env: DBG.env
+    };
+    await copyText(JSON.stringify(dbg, null, 2));
+  });
+
+  clearDockBtn.addEventListener('click', dockClear);
+
+  // ---------------------------
+  // Debug dock controls
+  // ---------------------------
+  dbgCollapseBtn.addEventListener('click', ()=>{
+    const collapsed = debugDockEl.classList.toggle('collapsed');
+    dbgCollapseBtn.textContent = collapsed ? "Expand" : "Collapse";
+  });
+  dbgClearBtn.addEventListener('click', dockClear);
+  dbgCopyBtn.addEventListener('click', ()=>copyText(DOCK.lines.join("\n")));
+  dbgHideBtn.addEventListener('click', ()=>{
+    debugDockEl.hidden = true;
+    debugFabEl.hidden = false;
+  });
+  debugFabEl.addEventListener('click', ()=>{
+    debugDockEl.hidden = false;
+    debugFabEl.hidden = true;
+  });
+
+  // ---------------------------
+  // P2P UI wiring
+  // ---------------------------
+  function onP2PModeChanged(){
+    const mode = String(p2pModeEl.value || 'off');
+    if(mode === 'off'){
+      p2pClose("mode off");
+    } else {
+      // changing between host/join resets any existing connection
+      p2pClose("mode switch");
+      P2P.mode = mode;
+      if(mode === 'host'){
+        P2P.role = 'host';
+        P2P.hostColor = (String(hostColorEl?.value||'w') === 'b') ? 'b' : 'w';
+        P2P.myColor = P2P.hostColor;
+        P2P.peerColor = (P2P.hostColor === 'w') ? 'b' : 'w';
+      } else if(mode === 'join'){
+        P2P.role = 'join';
+      }
+      updateP2PUI();
+    }
+  }
+
+  p2pModeEl.addEventListener('change', onP2PModeChanged);
+  hostColorEl.addEventListener('change', ()=>{
+    if(p2pModeEl.value === 'host' && !p2pIsConnected()){
+      P2P.hostColor = (String(hostColorEl.value||'w') === 'b') ? 'b' : 'w';
+      updateP2PUI();
+    }
+  });
+
+  p2pHostMakeOfferBtn.addEventListener('click', ()=>{
+    if(p2pModeEl.value !== 'host'){
+      showToast("Set mode to Host first", "warn");
+      return;
+    }
+    p2pHostCreateOffer();
+  });
+  p2pCopyHostOfferBtn.addEventListener('click', ()=>copyText(p2pHostOfferEl.value||""));
+  p2pHostSetAnswerBtn.addEventListener('click', ()=>{
+    if(p2pModeEl.value !== 'host'){
+      showToast("Set mode to Host first", "warn");
+      return;
+    }
+    p2pHostUseAnswer();
+  });
+
+  p2pJoinMakeAnswerBtn.addEventListener('click', ()=>{
+    if(p2pModeEl.value !== 'join'){
+      showToast("Set mode to Join first", "warn");
+      return;
+    }
+    p2pJoinCreateAnswer();
+  });
+  p2pCopyJoinAnswerBtn.addEventListener('click', ()=>copyText(p2pJoinAnswerEl.value||""));
+
+  const disconnectHandler = ()=>p2pClose("disconnect");
+  p2pDisconnectBtn.addEventListener('click', disconnectHandler);
+  p2pDisconnectBtn2.addEventListener('click', disconnectHandler);
+
+  // Ignore noisy extension errors
+  window.addEventListener('unhandledrejection', (ev)=>{
+    const s = String(ev.reason?.message || ev.reason || '');
+    if(s.includes('moz-extension://') || s.includes('lockdown') || s.includes('SES')) return;
+    setError(ev.reason, "unhandledrejection");
+  });
+  window.addEventListener('error', (ev)=>{
+    const s = String(ev.message || '');
+    if(s.includes('moz-extension://') || s.includes('lockdown') || s.includes('SES')) return;
+    setError(ev.error || ev.message, "window.onerror");
+  });
+
+  // ---------------------------
+  // Init
+  // ---------------------------
+  buildBoard();
+  renderAll();
+  updateModeInfo();
+  setDockState("idle");
+  setDockConn("not connected");
+  dock("✅ UI ready");
+
+  // New game: 90+30, clock starts only upon first move
+  clockReset({ startRunning: false });
+
+  // P2P init UI
+  updateP2PUI();
+})();
+
+</script>
+
+
+</body>
+</html>
