@@ -1,6 +1,8 @@
 # GenesisL1 Chess EVM AI Engine
 ### Chess EVM Convolutional Neural Network (Onchain Policy Net + Offchain Search UI)
 
+### https://GenesisL1.com/Chess.html
+
 A **serverless, single-page chess app** that plays chess using a **quantized convolutional neural network deployed as an EVM smart contract**. The model produces **policy logits** over a **4672-move** action space. The frontend combines:
 
 - **On-chain inference** (`eth_call`) for policy evaluation  
